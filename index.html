@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CalcBookJs — Copybook Editor (MVP)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0e0f0f;
+            --fg: #e8e8e8;
+            --muted: #a9a9a9;
+            --accent-muted: hsl(173, 100%, 16%);
+            --accent: #00ebd0;
+            --accent2: #ffd700;
+            --error: #ff6e91;
+            --mono: "Roboto Mono", "Liberation Mono", "Courier New", monospace;
+            --sans: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100vh;
+            margin: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: var(--sans);
+            padding-top: 1rem;
+        }
+
+        h1 {
+            font-weight: 700;
+            margin: 1rem;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 1.1fr 2.5fr;
+            grid-template-rows: .1fr auto;
+            gap: 1rem;
+            min-height: calc(100% - 100px);
+            padding: 1rem;
+        }
+
+        /* Left */
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+            background-image: linear-gradient(200deg, var(--accent-muted) -50%, var(--bg) 90%);
+            outline: 2px solid var(--accent-muted);
+            border-radius: 10px;
+            padding: 1rem;
+            min-height: 0;
+        }
+
+        .panel h3 {
+            margin: 0 0 6px 0;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        textarea.copybook {
+            width: 100%;
+            height: 100%;
+            min-height: 220px;
+            resize: none;
+            font: 13px/1.45 var(--mono);
+            color: var(--fg);
+            background: #0b0c0d;
+            border: 1px dashed #444;
+            border-radius: 8px;
+            padding: 10px;
+            white-space: pre;
+        }
+
+        .status {
+            font-size: .8rem;
+            color: var(--muted);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .status .ok {
+            color: var(--accent);
+        }
+
+        .status .err {
+            color: var(--error);
+        }
+
+        /* Right */
+        .toolbar {
+            display: flex;
+            gap: .5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .toolbar .spacer {
+            flex: 1;
+        }
+
+        button,
+        .btn {
+            font: 600 13px var(--mono);
+            background: transparent;
+            color: var(--fg);
+            border: 1px solid var(--accent);
+            border-radius: 999px;
+            padding: 6px 1rem;
+            cursor: pointer;
+            transition: background 300ms, color 100ms, outline 100ms;
+        }
+
+        button:hover,
+        button:focus {
+            background: var(--accent);
+            outline: 6px solid var(--accent);
+            outline-offset: -2px;
+            color: #08110f;
+        }
+
+        button:active {
+            outline-offset: -6px;
+        }
+
+        #delRecBtn:hover,
+        #delRecBtn:focus {
+            background: #ff6e91;
+            outline: 6px solid #ff6e91;
+        }
+
+        .secondary {
+            border-color: var(--accent2);
+        }
+
+        .secondary:hover,
+        .secondary:focus {
+            background: var(--accent2);
+            outline: 6px solid var(--accent2);
+            outline-offset: -2px;
+            color: #171407;
+        }
+
+        input[type=file] {
+            display: none;
+        }
+
+        .redefines {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            border: 1px dashed #333;
+            border-radius: 8px;
+            padding: 8px;
+            background: #0f1011;
+        }
+
+        .redef-group {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 6px 8px;
+            background: #0b0c0d;
+        }
+
+        .redef-label {
+            font-size: 1rem;
+            color: var(--muted);
+        }
+
+        .redef-value {
+            font-weight: 700;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: .5rem;
+            min-height: 0;
+        }
+
+        .columns {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: 1.1fr 1fr;
+            min-height: 0;
+        }
+
+        .rows {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form {
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 8px;
+            overflow: auto;
+            min-height: 0;
+            max-height: 330px;
+            box-shadow: 2px 3px 3px var(--accent-muted);
+            background-color: var(--bg);
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            align-items: baseline;
+            gap: .5rem;
+            padding: 1rem .5rem;
+            border-bottom: 1px dashed #222;
+        }
+
+        .field:last-child {
+            border-bottom: none;
+        }
+
+        .field .meta {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .field input {
+            width: 100%;
+            font: 1rem var(--mono);
+            color: var(--fg);
+            background: #0b0c0d;
+            border: 2px solid #333;
+            border-radius: .5rem;
+            padding: .8rem .5rem;
+            transition: all 200ms;
+        }
+
+        .field input:focus {
+            outline: 6px solid var(--accent);
+            outline-offset: -2px;
+            border-color: transparent;
+        }
+
+        .raw {
+            display: grid;
+            gap: .5rem;
+            border: 1px solid #2a2a2a;
+            border-radius: .5rem;
+            padding: 1rem;
+            box-shadow: 2px 3px 3px var(--accent-muted);
+            background-color: var(--bg);
+        }
+
+        .raw textarea {
+            width: 100%;
+            height: 180px;
+            resize: vertical;
+            font: .7rem var(--mono);
+            background: #0b0c0d;
+            color: var(--fg);
+            border: 1px dashed #333;
+            border-radius: 8px;
+            padding: 8px;
+            white-space: pre;
+            overflow: auto;
+        }
+
+        .raw .hint {
+            font-size: 1rem;
+            color: var(--muted);
+        }
+
+        .pill {
+            display: inline-flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 6px;
+            padding: .5rem;
+            border: 1px solid #333;
+            border-radius: 999px;
+            font-size: 1rem;
+            color: var(--muted);
+            background: #0b0c0d;
+        }
+
+        .pill>span {
+            margin-left: 1rem;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        /* Raw wrapper to position the overlay over the textarea */
+        .raw-wrap {
+            position: relative;
+        }
+
+        .raw-wrap>textarea#raw {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Highlight overlay: a translucent rectangle aligned to byte positions */
+        .raw-highlight {
+            position: absolute;
+            z-index: 2;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            background: rgba(255, 215, 0, 0.25);
+            /* gold-ish */
+            outline: 1px solid var(--accent2);
+            border-radius: 4px;
+            pointer-events: none;
+            /* never intercept mouse */
+            display: none;
+            /* hidden by default */
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, .08) inset;
+        }
+
+        hr {
+            width: 100%;
+            margin: 0;
+            border-color: #00ebd055;
+        }
+
+        /* Custom radios */
+        input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent2);
+            border-radius: 50%;
+            display: inline-grid;
+            place-content: center;
+            cursor: pointer;
+            transition: 100ms transform cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        input[type="radio"]::before {
+            content: "";
+            padding: 2px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            box-shadow: inset 10px 10px var(--accent);
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+        }
+
+        input[type="radio"]:checked::before {
+            transform: scale(1);
+        }
+
+        input[type="radio"]:focus {
+            outline: max(2px, 0.15em) solid currentColor;
+            outline-offset: max(2px, 0.15em);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <h1>CalcBookJs — Editor por Copybook</h1>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <!-- Import/Export mode -->
+            <span class="pill" style="gap:.6rem">
+                <label><input type="radio" name="importMode" id="importFixed"> Tamanho-fixo</label>
+                <label><input type="radio" name="importMode" id="importLines" checked> Linha a Linha</label>
+                <label class="btn secondary" for="fileIn">Importar</label>
+            </span>
+
+            <span class="pill" style="gap:.6rem">
+                <input id="fileIn" type="file" accept=".txt,.dat,.bin" />
+                <label><input type="checkbox" id="exportAsLines" checked> TXT</label>
+                <button id="exportBtn">Export</button>
+            </span>
+
+            <span class="pill" style="padding-inline: 1rem;">Tam: <b id="activeBytes">—</b></span>
+            <button id="prevRecBtn" title="Previous record">≪</button>
+            <input id="gotoRecInput" type="number" value="1" min="1" style="width:4rem;text-align:center">
+            <span>/ <b id="recTotal">1</b></span>
+            <button id="nextRecBtn" title="Next record">≫</button>
+
+            <!-- Record operations -->
+            <span class="pill" style="gap:.4rem">
+                <span>Registro:</span>
+                <button id="addRecBtn" title="Add empty record">+</button>
+                <button id="dupRecBtn" title="Duplicate current">Duplicar</button>
+                <button id="delRecBtn" title="Delete current" style="border-color:#ff6e91">Deletar</button>
+            </span>
+        </div>
+
+        <!-- LEFT: Copybook -->
+        <div class="panel">
+            <h3>Copybook</h3>
+            <!-- Presets -->
+            <span id="presetPicker" class="pill" style="gap:.5rem">
+                <span>Modelos:</span>
+            </span>
+            <textarea class="copybook" id="copybook"></textarea>
+            <div class="status" id="status">
+                <span>Tamanho do registro: <b id="recLen">—</b></span>
+                <span>Campos: <b id="fldCount">—</b></span>
+                <span class="ok" id="parseOk" style="display:none">Parsed ✓</span>
+                <span class="err" id="parseErr" style="display:none"></span>
+            </div>
+        </div>
+
+        <!-- RIGHT: Form + Raw -->
+        <div class="panel">
+            <div class="redefines" id="redefines">
+                <span class="muted">REDEFINES:</span>
+                <!-- dynamic groups here -->
+            </div>
+
+            <div class="content">
+                <div class="rows">
+                    <div class="form" id="form"></div>
+
+                    <div class="raw">
+                        <div class="hint">Arquivo cru:</div>
+                        <div id="rawWrap" class="raw-wrap">
+                            <textarea id="raw" wrap="off"></textarea>
+                            <div id="rawHl" class="raw-highlight" aria-hidden="true"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- /panel -->
+    </div> <!-- /app -->
+
+    <script>
+        /**************************************************************
+         * Utilities & Constants
+         *************************************************************/
+        const debounce = (fn, ms = 250) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+        const textEncoder = new TextEncoder();      // ASCII ok for MVP
+        const textDecoder = new TextDecoder('ascii');
+
+        const DEFAULT_ENDIAN = 'little';            // Change to 'big' if needed
+        const COMP_USAGES = /^(COMP|BINARY|COMP-5)$/i;
+
+        // Simple preset catalog (extend freely)
+        const PRESET_COPYBOOKS = {
+            "CNAB240": `      *----------------------------CNAB240-----------------------------*
+      *----------------------------HDR-ARQ-----------------------------*
+       01  CNAB240                      PIC X(240).
+       01  HEADER-ARQUIVO               REDEFINES CNAB240.
+           03  CD-BANCO-HDR-ARQ         PIC 9(003).
+           03  NR-LOTE-HDR-ARQ          PIC 9(004).
+           03  REG-TIP-0                PIC 9(001) VALUE '0'.
+           03  FILLER                   PIC X(009).
+      *
+           03  TIP-INSCR-HDR-ARQ        PIC 9(001).
+           03  NR-INSCR-HDR-ARQ         PIC 9(014).
+      *
+           03  CONVENIO-HDR-ARQ         PIC X(020).
+           03  CONVENIO-HDR-ARQ-E       REDEFINES CONVENIO-HDR-ARQ.
+               05  NR-CTR-HDR-ARQ       PIC 9(009).
+               05  CD-PRD-HDR-ARQ       PIC 9(004).
+               05  FILLER               PIC X(005).
+               05  IND-TST-HDR-ARQ      PIC X(002).
+      *
+           03  PREFIXO-AG-HDR-ARQ       PIC 9(005).
+           03  DIGITO-AG-HDR-ARQ        PIC X(001).
+           03  PREFIXO-CT-HDR-ARQ       PIC 9(012).
+           03  DIGITO-CT-HDR-ARQ        PIC X(001).
+           03  DIGITO-AG-CT-HDR-ARQ     PIC X(001).
+           03  NM-EMPRESA-HDR-ARQ       PIC X(030).
+           03  NM-BANCO-HDR-ARQ         PIC X(030).
+      *
+           03  FILLER                   PIC X(010).
+      *
+           03  CD-RMS-RTN               PIC X(001).
+           03  DMA-ARQ                  PIC X(008).
+           03  HMS-ARQ                  PIC X(006).
+           03  SEQ-ARQ                  PIC 9(006).
+           03  NR-VRS-ARQ               PIC 9(003).
+           03  DENS-ARQ                 PIC 9(005).
+
+      *
+           03  USO-BANCO                PIC X(019).
+           03  USO-EMPRESA              PIC X(020).
+      *
+           03  FILLER                   PIC X(017).
+           03  IND-SRVC-HDR-ARQ         PIC 9(002).
+           03  COD-OCOR-HDR-ARQ         PIC X(002) OCCURS 5 TIMES.
+      *----------------------------HDR-AB------------------------------*
+       01  HEADER-AB                    REDEFINES CNAB240.
+           03  CD-BANCO-HDR-AB          PIC 9(003).
+           03  NR-LOTE-HDR-AB           PIC 9(004).
+           03  REG-TIPO-1               PIC 9(001).
+      *
+           03  TIP-OP-HDR-AB            PIC X(001).
+           03  TIP-SRVC-HDR-AB          PIC 9(002).
+           03  FORMA-LCTO-HDR-AB        PIC 9(002).
+           03  NR-VRS-HDR-AB            PIC 9(003).
+      *
+           03  FILLER                   PIC X(001).
+      *
+           03  TIP-INSCR-HDR-AB         PIC 9(001).
+           03  NR-INSCR-HDR-AB          PIC 9(014).
+      *
+           03  CONVENIO-HDR-AB          PIC X(020).
+           03  CONVENIO-HDR-AB-E        REDEFINES CONVENIO-HDR-ARQ.
+               05  NR-CTR-HDR-AB        PIC 9(009).
+               05  CD-PRD-HDR-AB        PIC 9(004).
+               05  FILLER               PIC X(005).
+               05  IND-TST-HDR-AB       PIC X(002).
+      *
+           03  PREFIXO-AG-HDR-AB        PIC 9(005).
+           03  DIGITO-AG-HDR-AB         PIC X(001).
+           03  PREFIXO-CT-HDR-AB        PIC 9(012).
+           03  DIGITO-CT-HDR-AB         PIC X(001).
+           03  DIGITO-AG-CT-HDR-AB      PIC X(001).
+           03  NM-EMPRESA-HDR-AB        PIC X(030).
+      *
+           03  INFO1-MSG-HDR-AB         PIC X(040).
+           03  END-LOG-HDR-AB           PIC X(030).
+           03  END-NRO-HDR-AB           PIC 9(005).
+           03  END-CMPT-HDR-AB          PIC X(015).
+           03  END-CIDADE-HDR-AB        PIC X(020).
+           03  END-CEP-HDR-AB           PIC X(005).
+           03  END-CEP-CMPT-HDR-AB      PIC X(003).
+           03  END-ESTADO-HDR-AB        PIC X(002).
+      *
+           03  FILLER                   PIC X(008).
+      *
+           03  COD-OCOR-HDR-AB          PIC X(002) OCCURS 5 TIMES.
+      *----------------------------SEGA-------------------------------*
+       01  SEGMENTO-A                   REDEFINES CNAB240.
+           03  CD-BANCO-SEGA            PIC 9(003).
+           03  NR-LOTE-SEGA             PIC 9(004).
+           03  REG-TIPO-3               PIC 9(001).
+      *
+           03  NR-SEQ-LT-SEGA           PIC 9(005).
+           03  SEGA                     PIC X(001).
+           03  MVT-TIP-SEGA             PIC 9(001).
+           03  MVT-CD-SEGA              PIC 9(002).
+      *
+           03  CD-COMP                  PIC 9(003).
+           03  CD-BANCO                 PIC 9(003).
+      *
+           03  PREFIXO-AG-FAV-SEGA      PIC 9(005).
+           03  DIGITO-AG-FAV-SEGA       PIC X(001).
+           03  PREFIXO-CT-FAV-SEGA      PIC 9(012).
+           03  DIGITO-CT-FAV-SEGA       PIC X(001).
+           03  DIGITO-AG-CT-SEGA        PIC X(001).
+           03  NM-FAV-SEGA              PIC X(030).
+      *
+           03  NR-DOC-EMPRESA-SEGA      PIC X(020).
+           03  DMA-PGTO-SEGA            PIC 9(008).
+           03  TIP-MOEDA-SEGA           PIC X(003).
+           03  QNTD-MOEDA-SEGA          PIC 9(010)V9(005).
+           03  VLR-PGTO-SEGA            PIC 9(013)V99.
+           03  NR-DOC-BANCO-SEGA        PIC X(020).
+           03  DMA-REAL-PGTO-SEGA       PIC 9(008).
+           03  VLR-REAL-PGTO-SEGA       PIC 9(013)V99.
+      *
+           03  INFO2-SEGA               PIC X(040).
+      *
+           03  CD-FNLD-DOC-SEGA         PIC X(002).
+           03  CD-FNLD-TED-SEGA         PIC X(005).
+           03  CD-FNLD-CMPT-SEGA        PIC X(002).
+      *
+           03  FILLER                   PIC X(003).
+      *
+           03  AVISO-SEGA               PIC 9(001).
+           03  COD-OCOR-SEGA            PIC X(002) OCCURS 5 TIMES.
+      *----------------------------SEGB-------------------------------*
+       01  SEGMENTO-B                   REDEFINES CNAB240.
+           03  CD-BANCO-SEGB            PIC 9(003).
+           03  NR-LOTE-SEGB             PIC 9(004).
+           03  REG-TIPO-3B              PIC 9(001).
+      *
+           03  NR-SEQ-LT-SEGB           PIC 9(005).
+           03  SEGB                     PIC X(001).
+      *
+           03  FILLER                   PIC X(003).
+      *
+           03  IND-TIP-FAV              PIC 9(001).
+           03  NR-INSC-FAV              PIC X(014).
+           03  END-LOG-SEGB             PIC X(030).
+           03  END-NRO-SEGB             PIC 9(005).
+           03  END-CMPT-SEGB            PIC X(015).
+           03  END-CIDADE-SEGB          PIC X(020).
+           03  END-CEP-SEGB             PIC X(005).
+           03  END-CEP-CMPT-SEGB        PIC X(003).
+           03  END-ESTADO-SEGB          PIC X(002).
+      *
+           03  DMA-VCTO-B               PIC  9(008).
+           03  VLR-DCTO-B               PIC  9(013)V99.
+           03  VLR-ABAT-B               PIC  9(013)V99.
+           03  VLR-DESC-B               PIC  9(013)V99.
+           03  VLR-MORA-B               PIC  9(013)V99.
+           03  VLR-MULT-B               PIC  9(013)V99.
+      *
+           03  CD-DOC-FAV-SEGB          PIC X(015).
+           03  AVISO-SEGB               PIC 9(001).
+           03  CD-UG-CENTRAL            PIC 9(006).
+           03  CD-ISPB                  PIC 9(008).
+      *----------------------------TRLLOTE-----------------------------*
+       01  TRAILER-LOTE                 REDEFINES CNAB240.
+           03  CD-BANCO-TRLL            PIC 9(003).
+           03  NR-LOTE-TRLL             PIC 9(004).
+           03  REG-TIPO-5               PIC 9(001).
+           03  FILLER                   PIC X(009).
+           03  QTD-REG-TRLL             PIC 9(006).
+           03  TOT-DEB-TRLL             PIC 9(016)V9(02).
+           03  QTD-MOEDA-TRLL           PIC 9(013)V9(05).
+           03  NR-AVISO-DEB             PIC 9(006).
+           03  FILLER                   PIC X(165).
+           03  COD-OCOR-SEGA            PIC X(002) OCCURS 5 TIMES.
+      *----------------------------TRLARQ------------------------------*
+       01  TRILERL-ARQUIVO              REDEFINES CNAB240.
+           03  CD-BANCO-TRLARQ          PIC 9(003).
+           03  NR-LOTE-TRLARQ           PIC 9(004).
+           03  REG-TIPO-9               PIC 9(001).
+           03  FILLER                   PIC X(009).
+           03  QTD-LOTES-TRLARQ         PIC 9(006).
+           03  QTD-REG-TRLARQ           PIC 9(006).
+           03  QTD-CTAS-TRLARQ          PIC 9(006).
+           03  FILLER                   PIC X(205).`
+        };
+
+        /**************************************************************
+         * Store (central state) — tiny reactive core
+         *************************************************************/
+        const store = (() => {
+            const state = {
+                model: undefined,               // ResolvedModel
+                buffer: undefined,              // Uint8Array
+                activeVariant: {},              // baseName -> memberName (effective for current record)
+                activeVariantDefault: {},       // last chosen member per group (global)
+                recordVariants: [],             // per-record variant choices: array of { [group]: member }
+                records: undefined,             // Uint8Array[] (list of records)
+                currentRecord: 0
+            };
+            /** @type {Function[]} */
+            const listeners = [];
+
+            const getEffectiveActiveVariant = (index) => {
+                const eff = { ...state.activeVariantDefault };
+                const per = state.recordVariants?.[index] || {};
+                for (const [k, v] of Object.entries(per)) eff[k] = v;
+                return eff;
+            };
+
+            return {
+                get: () => state,
+                set: (partial) => { Object.assign(state, partial); listeners.forEach(f => f()); },
+                subscribe: (fn) => {
+                    listeners.push(fn);
+                    return () => { const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); };
+                },
+                setActiveVariant(base, member) {
+                    // Update global default
+                    state.activeVariantDefault[base] = member;
+                    // Update per-record
+                    const i = state.currentRecord ?? 0;
+                    if (!state.recordVariants[i]) state.recordVariants[i] = {};
+                    state.recordVariants[i][base] = member;
+                    // Recompute effective activeVariant
+                    state.activeVariant = getEffectiveActiveVariant(i);
+                    listeners.forEach(f => f());
+                },
+                setRecords(records) {
+                    state.records = records;
+                    state.recordVariants = new Array(records.length).fill(null).map(() => ({}));
+                    state.currentRecord = 0;
+                    state.buffer = records.length ? records[0] : undefined;
+                    state.activeVariant = getEffectiveActiveVariant(0);
+                    listeners.forEach(f => f());
+                },
+                setCurrentRecord(i) {
+                    if (!state.records || i < 0 || i >= state.records.length) return;
+                    state.currentRecord = i;
+                    state.buffer = state.records[i];
+                    state.activeVariant = getEffectiveActiveVariant(i);
+                    listeners.forEach(f => f());
+                },
+                addRecord(buf) {
+                    if (!state.records) state.records = [];
+                    state.records.push(buf);
+                    state.recordVariants.push({});
+                    state.currentRecord = state.records.length - 1;
+                    state.buffer = buf;
+                    state.activeVariant = getEffectiveActiveVariant(state.currentRecord);
+                    listeners.forEach(f => f());
+                },
+                duplicateRecord(i) {
+                    if (!state.records || i < 0 || i >= state.records.length) return;
+                    const src = state.records[i];
+                    const copy = new Uint8Array(src.length); copy.set(src);
+                    state.records.splice(i + 1, 0, copy);
+                    state.recordVariants.splice(i + 1, 0, { ...(state.recordVariants[i] || {}) });
+                    state.currentRecord = i + 1;
+                    state.buffer = copy;
+                    state.activeVariant = getEffectiveActiveVariant(state.currentRecord);
+                    listeners.forEach(f => f());
+                },
+                deleteRecord(i) {
+                    if (!state.records || !state.records.length) return;
+                    state.records.splice(i, 1);
+                    state.recordVariants.splice(i, 1);
+                    if (!state.records.length) {
+                        state.currentRecord = 0;
+                        state.buffer = undefined;
+                        state.activeVariant = getEffectiveActiveVariant(0);
+                    } else {
+                        state.currentRecord = Math.min(i, state.records.length - 1);
+                        state.buffer = state.records[state.currentRecord];
+                        state.activeVariant = getEffectiveActiveVariant(state.currentRecord);
+                    }
+                    listeners.forEach(f => f());
+                },
+                replaceCurrentBuffer(newBuf) {
+                    if (!state.records || state.buffer === undefined) state.buffer = newBuf;
+                    else state.records[state.currentRecord] = newBuf, state.buffer = newBuf;
+                    listeners.forEach(f => f());
+                },
+            };
+        })();
+
+        /**************************************************************
+         * Encoding helpers (HEX, COMP-3, Binary)
+         *************************************************************/
+        // ---------- HEX
+        function toHex(u8) {
+            let s = '';
+            for (let i = 0; i < u8.length; i++) s += u8[i].toString(16).toUpperCase().padStart(2, '0');
+            return s;
+        }
+        function hexToBytes(hex) {
+            const clean = hex.replace(/\s+/g, '').toUpperCase();
+            const out = new Uint8Array(Math.ceil(clean.length / 2));
+            for (let i = 0, j = 0; i < clean.length; i += 2, j++) {
+                out[j] = parseInt(clean.slice(i, i + 2).padEnd(2, '0'), 16) & 0xFF;
+            }
+            return out;
+        }
+
+        // ---------- COMP-3 (packed decimal) — refactored for clarity
+        function trimLeadZerosKeepOne(numStr) {
+            return numStr.replace(/^0+(?=\d)/, '') || '0';
+        }
+        function formatImpliedDecimal(digits, decimals, neg) {
+            if (!digits) return '';
+            if (decimals > 0) {
+                const intPart = digits.slice(0, Math.max(0, digits.length - decimals)) || '0';
+                const decPart = digits.slice(-decimals).padStart(decimals, '0');
+                return (neg ? '-' : '') + trimLeadZerosKeepOne(intPart) + '.' + decPart;
+            }
+            return (neg ? '-' : '') + trimLeadZerosKeepOne(digits);
+        }
+        function unpackComp3(u8, decimals = 0) {
+            if (!u8 || u8.length === 0) return '';
+            let digits = '';
+            for (let i = 0; i < u8.length - 1; i++) {
+                const b = u8[i];
+                digits += String((b >> 4) & 0x0F) + String(b & 0x0F);
+            }
+            const last = u8[u8.length - 1];
+            const lastHi = (last >> 4) & 0x0F;
+            const signNibble = last & 0x0F;
+            const neg = (signNibble === 0x0D);
+            digits += String(lastHi);
+            return formatImpliedDecimal(digits, decimals, neg);
+        }
+        function normalizeDecimalInputForComp3(str, decimals) {
+            let s = String(str ?? '').trim(), neg = false;
+            if (s.startsWith('-')) { neg = true; s = s.slice(1); }
+            s = s.replace(/[^\d.]/g, '');
+            if (decimals === 0) s = s.replace(/\./g, '');
+            else { const p = s.indexOf('.'); if (p >= 0) s = s.slice(0, p + 1) + s.slice(p + 1).replace(/\./g, ''); }
+            let intPart = s, decPart = '';
+            if (decimals > 0 && s.includes('.')) {
+                const parts = s.split('.'); intPart = parts[0] || '0'; decPart = (parts[1] || '');
+            }
+            intPart = intPart.replace(/\D/g, '') || '0';
+            if (decimals > 0) decPart = decPart.replace(/\D/g, '').padEnd(decimals, '0').slice(0, decimals);
+            return { neg, intPart, decPart };
+        }
+        function buildPackedFromDigits(digits, byteLen, signNibble) {
+            let nibbles = digits.split('').map(d => (d.charCodeAt(0) - 48));
+            nibbles.push(signNibble & 0x0F);
+            if (nibbles.length % 2 === 1) nibbles.unshift(0);
+            const out = new Uint8Array(byteLen);
+            for (let i = byteLen - 1, ni = nibbles.length - 1; i >= 0; i--) {
+                const lo = nibbles[ni--] ?? 0, hi = nibbles[ni--] ?? 0;
+                out[i] = ((hi & 0x0F) << 4) | (lo & 0x0F);
+            }
+            return out;
+        }
+        function packComp3(str, byteLen, decimals = 0) {
+            const { neg, intPart, decPart } = normalizeDecimalInputForComp3(str, decimals);
+            const digits = decimals > 0 ? (intPart + decPart) : (intPart || '0');
+            const signNibble = neg ? 0x0D : 0x0C; // positive 0x0C/0x0F; we use 0x0C
+            return buildPackedFromDigits(digits, byteLen, signNibble);
+        }
+
+        // ---------- COMP / BINARY / COMP-5 (two's complement)
+        function unpackBinaryNumeric(u8, signed = false, decimals = 0, endian = DEFAULT_ENDIAN) {
+            const arr = new Uint8Array(8);
+            if (endian === 'little') arr.set(u8, 0);
+            else arr.set(u8, 8 - u8.length);
+            const dv = new DataView(arr.buffer);
+            let bi;
+            switch (u8.length) {
+                case 1: bi = BigInt(arr[0]); if (signed && bi > 0x7Fn) bi = BigInt((arr[0] << 24) >> 24); break;
+                case 2: bi = signed ? BigInt(dv.getInt16(0, endian === 'little')) : BigInt(dv.getUint16(0, endian === 'little')); break;
+                case 4: bi = signed ? BigInt(dv.getInt32(0, endian === 'little')) : BigInt(dv.getUint32(0, endian === 'little')); break;
+                default: bi = signed ? dv.getBigInt64(0, endian === 'little') : dv.getBigUint64(0, endian === 'little');
+            }
+            if (decimals > 0) {
+                const neg = bi < 0n, abs = neg ? -bi : bi, tenPow = 10n ** BigInt(decimals);
+                const intPart = abs / tenPow, decPart = (abs % tenPow).toString().padStart(decimals, '0');
+                return (neg ? '-' : '') + intPart.toString() + '.' + decPart;
+            }
+            return bi.toString();
+        }
+        function packBinaryNumeric(valueStr, byteLen, signed = false, decimals = 0, endian = DEFAULT_ENDIAN) {
+            let s = String(valueStr).trim(), neg = false;
+            if (s.startsWith('-')) { neg = true; s = s.slice(1); }
+            let [iRaw = '0', dRaw = ''] = s.split('.');
+            iRaw = iRaw.replace(/\D/g, '') || '0';
+            dRaw = (dRaw.replace(/\D/g, '')).padEnd(decimals, '0').slice(0, decimals);
+            let bi = BigInt(iRaw + dRaw);
+            if (neg && bi !== 0n) bi = -bi;
+            let min, max;
+            if (signed) {
+                const bits = BigInt(byteLen * 8);
+                min = -(1n << (bits - 1n)); max = (1n << (bits - 1n)) - 1n;
+            } else {
+                min = 0n; max = (1n << BigInt(byteLen * 8)) - 1n;
+            }
+            if (bi < min) bi = min; if (bi > max) bi = max;
+            const arr = new Uint8Array(byteLen), dv = new DataView(arr.buffer);
+            if (byteLen === 1) dv.setUint8(0, Number(neg ? (256n + bi) % 256n : bi));
+            else if (byteLen === 2) signed ? dv.setInt16(0, Number(bi), endian === 'little') : dv.setUint16(0, Number(bi), endian === 'little');
+            else if (byteLen === 4) signed ? dv.setInt32(0, Number(bi), endian === 'little') : dv.setUint32(0, Number(bi), endian === 'little');
+            else signed ? dv.setBigInt64(0, bi, endian === 'little') : dv.setBigUint64(0, bi, endian === 'little');
+            return arr;
+        }
+
+        /**
+         * Normalize decimal input to PIC constraints (digits + optional dot/sign).
+         */
+        function normalizeDecimalInput(raw, totalDigits, decimals, signed) {
+            let s = String(raw || '');
+            let neg = false;
+            if (signed && s.startsWith('-')) { neg = true; s = s.slice(1); }
+            s = s.replace(/[^\d.]/g, '');
+            if (decimals === 0) s = s.replace(/\./g, '');
+            else {
+                const p = s.indexOf('.');
+                if (p >= 0) s = s.slice(0, p + 1) + s.slice(p + 1).replace(/\./g, '');
+            }
+            let intPart = s, decPart = '';
+            if (decimals > 0 && s.includes('.')) {
+                const parts = s.split('.'); intPart = parts[0]; decPart = parts[1] || '';
+            }
+            const intMax = Math.max(0, totalDigits - decimals);
+            if (intPart.length > intMax) intPart = intPart.slice(0, intMax);
+            if (decimals > 0 && decPart.length > decimals) decPart = decPart.slice(0, decimals);
+            let out = intPart;
+            if (decimals > 0) out += (decPart.length ? '.' + decPart : (s.endsWith('.') ? '.' : ''));
+            if (neg) out = '-' + out;
+            const maxLen = totalDigits + (decimals > 0 ? 1 : 0) + (signed ? 1 : 0);
+            if (out.length > maxLen) out = out.slice(0, maxLen);
+            return out;
+        }
+
+        /**************************************************************
+         * Types (JSDoc)
+         *************************************************************/
+        /**
+         * @typedef {"ALPHA"|"NUMERIC"} PicType
+         * @typedef {Object} CopybookNode
+         * @property {number} level
+         * @property {string} name
+         * @property {boolean} isFiller
+         * @property {{raw:string,type:PicType,length:number,decimals?:number,signed?:boolean}|undefined} pic
+         * @property {{times:number}|undefined} occurs
+         * @property {string|undefined} redefines
+         * @property {string|undefined} usage
+         * @property {CopybookNode[]} children
+         *
+         * @typedef {{group:string, member:string}} VariantTag
+         * @typedef {CopybookNode & {
+         *   offset:number,
+         *   byteLength:number,
+         *   variantPath?: VariantTag[],
+         *   usage?: string,
+         * }} FieldResolved
+         *
+         * @typedef {Object} ResolvedModel
+         * @property {CopybookNode[]} root
+         * @property {FieldResolved[]} fieldsFlat
+         * @property {number} recordLength
+         * @property {Record<string,string[]>} redefineGroups
+         * @property {Record<string, CopybookNode>} nameIndex
+         */
+
+        /**************************************************************
+         * Copybook Parse
+         *************************************************************/
+        function preprocessCopybook(text) {
+            const rawLines = text.split(/\r?\n/);
+            // Drop columns 1-6 (line numbers), remove pure comments, join continuations
+            const cleaned = rawLines
+                .map(l => l.length > 6 ? l.slice(6) : l)
+                .map(l => l.replace(/\r$/, ''))
+                .filter(l => l.trim().length > 0)
+                .filter(l => !l.trim().startsWith('*'));
+
+            const lines = [];
+            let current = '';
+            for (let i = 0; i < cleaned.length; i++) {
+                const line = cleaned[i];
+                const trimmed = line.trimEnd();
+                const endsWithHyphen = trimmed.endsWith('-');
+                const endsWithoutDot = !trimmed.endsWith('.');
+                if (endsWithHyphen || endsWithoutDot) {
+                    current += trimmed.replace(/-$/, '');
+                } else {
+                    current += line;
+                    lines.push(current.trim());
+                    current = '';
+                }
+            }
+            if (current.trim()) lines.push(current.trim());
+            console.log(lines);
+            return lines;
+        }
+
+        const PIC_REGEX = /PIC(TURE)?\s+([A-Za-z0-9()V\.]+)/i;
+        const OCCURS_REGEX = /OCCURS\s+(\d+)\s+TIMES/i;
+        const REDEF_REGEX = /REDEFINES\s+([A-Za-z0-9\-]+)/i;
+        const USAGE_REGEX = /USAGE\s+(?:IS\s+)?([A-Z0-9\-]+)/i;
+
+        function normalizeUsage(u) {
+            if (!u) return undefined;
+            const x = u.toUpperCase();
+            if (x === 'COMP' || x === 'COMPUTATIONAL' || x === 'BINARY' || x === 'COMP-5') return x;
+            if (x === 'COMP-3' || x === 'COMPUTATIONAL-3' || x === 'PACKED-DECIMAL') return 'COMP-3';
+            return 'DISPLAY';
+        }
+
+        function parsePic(raw) {
+            let f = raw.toUpperCase();
+            let signed = false;
+            if (f.startsWith('S')) { signed = true; f = f.slice(1); }
+            if (f.startsWith('X')) {
+                const m = f.match(/X\((\d+)\)/);
+                const length = m ? parseInt(m[1], 10) : ((f.match(/X/g) || []).length);
+                return { raw, type: 'ALPHA', length, signed: false };
+            }
+            if (f.startsWith('9')) {
+                const m = f.match(/9\((\d+)\)(?:V9\((\d+)\))?/);
+                if (m) {
+                    const len = parseInt(m[1], 10) + (m[2] ? parseInt(m[2], 10) : 0);
+                    const decimals = m[2] ? parseInt(m[2], 10) : undefined;
+                    return { raw, type: 'NUMERIC', length: len, decimals, signed };
+                }
+                const parts = f.split('V');
+                const intLen = (parts[0].match(/9/g) || []).length;
+                const decLen = parts[1] ? (parts[1].match(/9/g) || []).length : 0;
+                return { raw, type: 'NUMERIC', length: intLen + decLen, decimals: decLen || undefined, signed };
+            }
+            return undefined;
+        }
+
+        function parseCopybook(text) {
+            const lines = preprocessCopybook(text);
+            const root = [];
+            const stack = [];
+            let fillerId = 1;
+
+            for (const line of lines) {
+                const tokens = line.trim().split(/\s+/);
+                const level = parseInt(tokens[0], 10);
+                const nameToken = tokens[1];
+                // console.log(nameToken)
+                if (Number.isNaN(level) || !nameToken) continue;
+
+                let name = nameToken.replace(/\.$/, '');
+                const node = /** @type {CopybookNode} */ ({
+                    level,
+                    name,
+                    isFiller: name.toUpperCase() === 'FILLER',
+                    redefines: undefined,
+                    pic: undefined,
+                    occurs: undefined,
+                    children: []
+                });
+
+                // REDEFINES
+                const rm = line.match(REDEF_REGEX);
+                if (rm) node.redefines = rm[1].replace(/\.$/, '');
+                console.log(node.redefines)
+
+                // PIC
+                const pm = line.match(PIC_REGEX);
+                if (pm) {
+                    const pic = parsePic(pm[2]);
+                    if (pic) node.pic = pic;
+                }
+
+                // OCCURS
+                const om = line.match(OCCURS_REGEX);
+                if (om) node.occurs = { times: parseInt(om[1], 10) };
+
+                // USAGE (COMP*)
+                const um = line.match(USAGE_REGEX);
+                if (um) node.usage = normalizeUsage(um[1]);
+
+                // Attach by level
+                while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
+                if (stack.length === 0) root.push(node);
+                else stack[stack.length - 1].children.push(node);
+                stack.push(node);
+            }
+
+            // Ensure fillers are addressable
+            (function rename(nodes) {
+                for (const n of nodes) {
+                    if (n.isFiller) n.name = `FILLER-${fillerId++}`;
+                    rename(n.children);
+                }
+            })(root);
+
+            return root;
+        }
+
+        /**************************************************************
+         * Model Resolver (offsets, occurs, redefines)
+         *************************************************************/
+        function storageLength(node) {
+            const usage = (node.usage || 'DISPLAY').toUpperCase();
+            const pic = node.pic;
+            if (!pic) return 0;
+
+            if (usage === 'DISPLAY') return pic.length;
+
+            if (usage === 'COMP' || usage === 'BINARY' || usage === 'COMP-5') {
+                const totalDigits = pic.type === 'NUMERIC' ? pic.length : 0;
+                if (totalDigits <= 4) return 2;
+                if (totalDigits <= 9) return 4;
+                return 8;
+            }
+            if (usage === 'COMP-3') {
+                const totalDigits = pic.type === 'NUMERIC' ? pic.length : 0;
+                return Math.ceil((totalDigits + 1) / 2);
+            }
+            return pic.length;
+        }
+
+        /**
+         * Resolve to flat model with byte offsets and redefines groups.
+         * @param {CopybookNode[]} root
+         * @returns {ResolvedModel}
+         */
+        function resolveModel(root) {
+            // name index
+            const nameIndex = new Map();
+            (function indexNodes(nodes) {
+                for (const n of nodes) { nameIndex.set(n.name, n); indexNodes(n.children); }
+            })(root);
+
+            // redefine groups: base -> [base, members...]
+            /** @type {Record<string, Set<string>>} */
+            const groupsSet = {};
+            (function collectGroups(nodes) {
+                for (const n of nodes) {
+                    if (n.redefines) {
+                        const base = n.redefines;
+                        groupsSet[base] ||= new Set([base]);
+                        groupsSet[base].add(n.name);
+                    }
+                    collectGroups(n.children);
+                }
+            })(root);
+
+            /** @type {Record<string,string[]>} */
+            const redefineGroups = {};
+            for (const [k, setv] of Object.entries(groupsSet)) redefineGroups[k] = Array.from(setv);
+
+            const memberToBase = {};
+            for (const [base, arr] of Object.entries(redefineGroups)) for (const m of arr) memberToBase[m] = base;
+
+            const sizeOf = (node) => {
+                if (node.children.length && !node.pic && !node.redefines) {
+                    let total = 0; for (const c of node.children) total += sizeOf(c);
+                    const times = node.occurs?.times ?? 1; return total * times;
+                }
+                const len = node.pic ? storageLength(node) : 0;
+                const times = node.occurs?.times ?? 1; return len * times;
+            };
+
+            const offsetByName = {};
+            /** @type {FieldResolved[]} */
+            const fieldsFlat = [];
+            let recordLength = 0;
+            const variantStack = [];
+
+            const walk = (nodes, currOffset) => {
+                let offset = currOffset;
+                for (const node of nodes) {
+                    let thisOffset = offset;
+
+                    // if REDEFINES, align to base offset
+                    if (node.redefines) {
+                        const base = node.redefines;
+                        if (!(base in offsetByName)) console.warn(`REDEFINES base not found yet: ${base}. Ensure base appears before redefiner.`);
+                        else thisOffset = offsetByName[base];
+                    }
+
+                    if (!(node.name in offsetByName)) offsetByName[node.name] = thisOffset;
+
+                    // if node is part of a redefine group, push its tag for visibility filtering
+                    const baseOfMember = memberToBase[node.name];
+                    let pushed = false;
+                    if (baseOfMember) { variantStack.push({ group: baseOfMember, member: node.name }); pushed = true; }
+
+                    const totalSize = sizeOf(node);
+
+                    if (node.children.length && !node.pic) {
+                        const occurs = node.occurs?.times ?? 1;
+                        const perOccSize = occurs ? totalSize / occurs : totalSize;
+                        for (let i = 0; i < occurs; i++) walk(node.children, thisOffset + i * perOccSize);
+                    } else {
+                        const occurs = node.occurs?.times ?? 1;
+                        const len = node.pic ? storageLength(node) : 0;
+                        for (let i = 0; i < occurs; i++) {
+                            fieldsFlat.push({
+                                ...node,
+                                offset: thisOffset + i * len,
+                                byteLength: len,
+                                variantPath: variantStack.length ? variantStack.slice() : undefined
+                            });
+                        }
+                    }
+
+                    if (pushed) variantStack.pop();
+
+                    // advance running offset only if not redefining
+                    if (!node.redefines) {
+                        offset += totalSize;
+                        recordLength = Math.max(recordLength, offset);
+                    } else {
+                        recordLength = Math.max(recordLength, thisOffset + totalSize);
+                    }
+                }
+            };
+            walk(root, 0);
+
+            return {
+                root,
+                fieldsFlat,
+                recordLength,
+                redefineGroups,
+                nameIndex: Object.fromEntries(nameIndex)
+            };
+        }
+
+        /**************************************************************
+         * Pack / Unpack DISPLAY
+         *************************************************************/
+        function unpackField(buffer, field) {
+            const bytes = buffer.slice(field.offset, field.offset + field.byteLength);
+            const s = textDecoder.decode(bytes);
+
+            // COMP/BINARY/COMP-5 -> show HEX/Value handled in renderForm
+            // COMP-3 -> handled in renderForm
+            if (field.pic?.type === 'NUMERIC') {
+                if (field.pic.decimals) {
+                    const d = field.pic.decimals;
+                    if (s.trim() === '') return '';
+                    const iPart = s.slice(0, s.length - d);
+                    const dPart = s.slice(s.length - d);
+                    return `${iPart}.${dPart}`.replace(/\.$/, '');
+                }
+                return s.trim();
+            }
+            // ALPHA
+            return s.replace(/[\u0000 ]+$/g, '');
+        }
+
+        function packField(buffer, field, value) {
+            let text = '';
+            const len = field.byteLength;
+            if (field.pic?.type === 'NUMERIC') {
+                if (field.pic.decimals) {
+                    const d = field.pic.decimals;
+                    const [iRaw, dRaw = ''] = String(value).split('.');
+                    const iLen = field.byteLength - d;
+                    const iStr = (iRaw ?? '').replace(/\D/g, '').padStart(iLen, '0').slice(-iLen);
+                    const dStr = (dRaw ?? '').replace(/\D/g, '').padEnd(d, '0').slice(0, d);
+                    text = iStr + dStr;
+                } else {
+                    const digits = String(value).replace(/\D/g, '');
+                    text = digits.padStart(len, '0').slice(-len);
+                }
+            } else {
+                text = String(value);
+            }
+            buffer.set(textEncoder.encode(text.padEnd(len, ' ')), field.offset);
+        }
+
+        /**************************************************************
+         * DOM refs
+         *************************************************************/
+        const $copybook = document.getElementById('copybook');
+        const $statusRecLen = document.getElementById('recLen');
+        const $statusFldCt = document.getElementById('fldCount');
+        const $parseOk = document.getElementById('parseOk');
+        const $parseErr = document.getElementById('parseErr');
+        const $redefs = document.getElementById('redefines');
+        const $form = document.getElementById('form');
+        const $raw = document.getElementById('raw');
+        const $fileIn = document.getElementById('fileIn');
+        const $exportBtn = document.getElementById('exportBtn');
+        const $activeBytes = document.getElementById('activeBytes');
+        const $prevRecBtn = document.getElementById('prevRecBtn');
+        const $nextRecBtn = document.getElementById('nextRecBtn');
+        const $gotoRecInput = document.getElementById('gotoRecInput');
+        const $recTotal = document.getElementById('recTotal');
+        const $addRecBtn = document.getElementById('addRecBtn');
+        const $dupRecBtn = document.getElementById('dupRecBtn');
+        const $delRecBtn = document.getElementById('delRecBtn');
+        const $importFixed = document.getElementById('importFixed');
+        const $importLines = document.getElementById('importLines');
+        const $exportAsLines = document.getElementById('exportAsLines');
+        const $rawWrap = document.getElementById('rawWrap');
+        const $rawHl = document.getElementById('rawHl');
+        const $presetPicker = document.getElementById('presetPicker');
+
+        /**************************************************************
+         * Highlight overlay (raw)
+         *************************************************************/
+        let __charWidthPx = null, __lineHeightPx = null, __lastHl = null;
+
+        function measureCharMetrics() {
+            const probe = document.createElement('span');
+            probe.textContent = '0000000000';
+            probe.style.position = 'absolute';
+            probe.style.visibility = 'hidden';
+            probe.style.whiteSpace = 'pre';
+            const cs = getComputedStyle($raw);
+            probe.style.font = cs.font;
+            probe.style.letterSpacing = cs.letterSpacing;
+            probe.style.lineHeight = cs.lineHeight;
+            $rawWrap.appendChild(probe);
+            const w = probe.getBoundingClientRect().width;
+            __charWidthPx = w / 10;
+            const lh = parseFloat(cs.lineHeight);
+            __lineHeightPx = Number.isFinite(lh) ? lh : probe.getBoundingClientRect().height;
+            probe.remove();
+        }
+        if ('fonts' in document) document.fonts.ready.then(measureCharMetrics).catch(measureCharMetrics);
+        else window.addEventListener('load', measureCharMetrics);
+        window.addEventListener('resize', () => {
+            measureCharMetrics();
+            if (__lastHl?.mode === 'linecol') {
+                positionHighlightByLineCol(__lastHl.lineIndex, __lastHl.colStart, __lastHl.byteLen);
+            } else {
+                $rawHl.style.display = 'none';
+            }
+        });
+        function hideHighlight() { __lastHl = null; $rawHl.style.display = 'none'; }
+
+        function positionHighlightByLineCol(lineIndex, colStart, byteLen) {
+            if (!__charWidthPx) measureCharMetrics();
+            const cs = getComputedStyle($raw);
+            const padLeft = parseFloat(cs.paddingLeft) || 0;
+            const padTop = parseFloat(cs.paddingTop) || 0;
+            const scrollLeft = $raw.scrollLeft;
+            const scrollTop = $raw.scrollTop;
+
+            const leftPx = padLeft + (colStart * __charWidthPx) - scrollLeft;
+            const widthPx = byteLen * __charWidthPx;
+            const topPx = padTop + (lineIndex * (__lineHeightPx || 18)) - scrollTop;
+            const heightPx = __lineHeightPx || 18;
+
+            const viewLeft = 0, viewRight = $raw.clientWidth;
+            const clampedLeft = Math.max(leftPx, viewLeft);
+            const clampedRight = Math.min(leftPx + widthPx, viewRight);
+            const visibleWidth = Math.max(0, clampedRight - clampedLeft);
+
+            if (visibleWidth <= 0 || topPx + heightPx < 0 || topPx > $raw.clientHeight) {
+                $rawHl.style.display = 'none'; return;
+            }
+            $rawHl.style.left = `${clampedLeft}px`;
+            $rawHl.style.top = `${topPx}px`;
+            $rawHl.style.width = `${visibleWidth}px`;
+            $rawHl.style.height = `${heightPx}px`;
+            $rawHl.style.display = 'block';
+            __lastHl = { mode: 'linecol', lineIndex, colStart, byteLen };
+        }
+
+        $raw.addEventListener('scroll', () => {
+            if (__lastHl?.mode === 'linecol') {
+                positionHighlightByLineCol(__lastHl.lineIndex, __lastHl.colStart, __lastHl.byteLen);
+            }
+        });
+
+        /**************************************************************
+         * Status bar
+         *************************************************************/
+        function setStatus(ok, msg = '') {
+            $parseOk.style.display = ok ? '' : 'none';
+            $parseErr.style.display = ok ? 'none' : '';
+            $parseErr.textContent = ok ? '' : msg;
+        }
+        function renderStatus() {
+            const st = store.get();
+            const len = st.model?.recordLength ?? '—';
+            const ct = st.model?.fieldsFlat.length ?? '—';
+            $statusRecLen.textContent = String(len);
+            $statusFldCt.textContent = String(ct);
+
+            const total = st.records?.length ?? (st.buffer ? 1 : 0);
+            $recTotal && ($recTotal.textContent = String(total || 1));
+            if (typeof st.currentRecord === 'number' && $gotoRecInput && document.activeElement !== $gotoRecInput) {
+                $gotoRecInput.value = String((st.currentRecord ?? 0) + 1);
+            }
+        }
+
+        /**************************************************************
+         * REDEFINES panel (context-aware)
+         *************************************************************/
+        function computeTopGroup(model) {
+            let best = null;
+            for (const [base, members] of Object.entries(model.redefineGroups)) {
+                if (members.length <= 1) continue;
+                const node = model.nameIndex[base]; if (!node) continue;
+                const level = node.level;
+                if (!best || level < best.level) best = { base, level };
+            }
+            return best ? best.base : null;
+        }
+        function getSubtreeNames(model, rootName) {
+            const start = model.nameIndex[rootName];
+            const names = new Set(); if (!start) return names;
+            (function walk(n) { names.add(n.name); for (const c of n.children) walk(c); })(start);
+            return names;
+        }
+        function renderRedefines() {
+            const { model, activeVariant } = store.get();
+            $redefs.innerHTML = '<span class="muted">REDEFINES:</span>';
+            if (!model) return;
+
+            const topBase = computeTopGroup(model);
+            const activeTop = topBase ? (activeVariant[topBase] || topBase) : null;
+            const subtree = activeTop ? getSubtreeNames(model, activeTop) : new Set();
+
+            const groupsToShow = [];
+            for (const [base, members] of Object.entries(model.redefineGroups)) {
+                if (members.length <= 1) continue;
+                if (base === topBase) groupsToShow.push([base, members]);
+                else {
+                    const filtered = members.filter(m => subtree.has(m));
+                    if (filtered.length > 1) groupsToShow.push([base, filtered]);
+                }
+            }
+
+            const frag = document.createDocumentFragment();
+            for (const [base, members] of groupsToShow) {
+                const wrap = document.createElement('span'); wrap.className = 'redef-group';
+                const prev = document.createElement('button'); prev.textContent = '≪'; prev.className = 'secondary';
+                const next = document.createElement('button'); next.textContent = '≫'; next.className = 'secondary';
+                const label = document.createElement('span'); label.className = 'redef-label'; label.textContent = base;
+                const curr = document.createElement('span'); curr.className = 'redef-value';
+
+                const idx = () => {
+                    const cur = activeVariant[base] || base;
+                    const i = members.indexOf(cur);
+                    return i >= 0 ? i : 0;
+                };
+                const setCurr = () => { curr.textContent = activeVariant[base] || base; };
+
+                prev.addEventListener('click', () => {
+                    let i = idx(); i = (i - 1 + members.length) % members.length;
+                    store.setActiveVariant(base, members[i]);
+                });
+                next.addEventListener('click', () => {
+                    let i = idx(); i = (i + 1) % members.length;
+                    store.setActiveVariant(base, members[i]);
+                });
+
+                const sep = document.createElement('span'); sep.textContent = '→';
+                wrap.append(prev, label, sep, curr, next);
+                frag.appendChild(wrap);
+                setCurr();
+            }
+            $redefs.appendChild(frag);
+        }
+
+        /**************************************************************
+         * Visibility (variantPath)
+         *************************************************************/
+        function fieldVisible(f, activeVariant) {
+            if (!f.variantPath || f.variantPath.length === 0) return true;
+            for (const tag of f.variantPath) {
+                const selected = activeVariant[tag.group] || tag.group;
+                if (selected !== tag.member) return false;
+            }
+            return true;
+        }
+        function visibleFields(model, activeVariant) {
+            return model.fieldsFlat.filter(f => fieldVisible(f, activeVariant));
+        }
+
+        /**************************************************************
+         * Form rendering
+         *************************************************************/
+        function renderForm() {
+            const { model, buffer, activeVariant } = store.get();
+            $form.innerHTML = '';
+            if (!model || !buffer) return;
+
+            const fields = visibleFields(model, activeVariant);
+            const frag = document.createDocumentFragment();
+
+            for (const f of fields) {
+                const usage = (f.usage || 'DISPLAY').toUpperCase();
+                const isCompBin = COMP_USAGES.test(usage);
+                const isComp3 = usage === 'COMP-3';
+                const isBinaryType = isCompBin || isComp3;
+
+                const row = document.createElement('div');
+                row.className = 'field';
+
+                const lbl = document.createElement('div');
+                lbl.innerHTML = `<b>${f.name}</b> <span class="meta">[${f.offset}..${f.offset + f.byteLength - 1}] ${f.pic?.raw || ''}</span>`;
+
+                if (isBinaryType) {
+                    // two inputs: VALUE (decimal) + HEX
+                    const box = document.createElement('div');
+                    box.style.display = 'grid';
+                    box.style.gridTemplateColumns = '1fr 1fr';
+                    box.style.gap = '.5rem'; box.style.width = '100%';
+
+                    const val = document.createElement('input');
+                    val.autocomplete = 'off'; val.spellcheck = false; val.autocapitalize = 'off';
+                    val.setAttribute('name', f.name + '__val');
+                    val.placeholder = (isComp3 ? 'decimal (packed)' : 'decimal');
+
+                    const digits = f.pic?.length || 0;
+                    const decs = f.pic?.decimals || 0;
+                    const signed = !!f.pic?.signed;
+
+                    const valMaxLen = digits + (decs > 0 ? 1 : 0) + (signed ? 1 : 0);
+                    val.setAttribute('maxlength', String(valMaxLen));
+                    val.setAttribute('size', String(Math.min(valMaxLen, 24)));
+                    val.setAttribute('inputmode', 'decimal');
+
+                    const rawBytes = buffer.slice(f.offset, f.offset + f.byteLength);
+                    if (isComp3) val.value = unpackComp3(rawBytes, f.pic?.decimals || 0);
+                    else val.value = unpackBinaryNumeric(rawBytes, signed, f.pic?.decimals || 0, DEFAULT_ENDIAN);
+
+                    const hex = document.createElement('input');
+                    hex.autocomplete = 'off'; hex.spellcheck = false; hex.autocapitalize = 'off';
+                    hex.setAttribute('name', f.name + '__hex');
+                    hex.placeholder = 'HEX';
+                    hex.setAttribute('maxlength', String(f.byteLength * 2));
+                    hex.setAttribute('size', String(Math.min(f.byteLength * 2, 24)));
+                    hex.value = toHex(rawBytes);
+
+                    val.addEventListener('input', () => {
+                        const norm = normalizeDecimalInput(val.value, digits, decs, signed);
+                        if (val.value !== norm) val.value = norm;
+                        if (isComp3) {
+                            const out = packComp3(val.value, f.byteLength, f.pic?.decimals || 0);
+                            buffer.set(out, f.offset);
+                            hex.value = toHex(out);
+                        } else {
+                            const out = packBinaryNumeric(val.value, f.byteLength, signed, f.pic?.decimals || 0, DEFAULT_ENDIAN);
+                            buffer.set(out, f.offset);
+                            hex.value = toHex(out);
+                        }
+                        renderRaw();
+                    });
+
+                    hex.addEventListener('input', () => {
+                        const clean = hex.value.replace(/[^0-9A-Fa-f]/g, '').toUpperCase().slice(0, f.byteLength * 2);
+                        if (clean !== hex.value) hex.value = clean;
+                        const out = hexToBytes(clean);
+                        const write = new Uint8Array(f.byteLength);
+                        write.fill(0x00);
+                        write.set(out.slice(-f.byteLength), 0);
+                        buffer.set(write, f.offset);
+
+                        const now = buffer.slice(f.offset, f.offset + f.byteLength);
+                        if (isComp3) val.value = unpackComp3(now, f.pic?.decimals || 0);
+                        else val.value = unpackBinaryNumeric(now, signed, f.pic?.decimals || 0, DEFAULT_ENDIAN);
+                        renderRaw();
+                    });
+
+                    const show = () => {
+                        const s2 = store.get(); const { records, model, currentRecord } = s2;
+                        if (records && model) positionHighlightByLineCol(currentRecord, f.offset, f.byteLength);
+                        else positionHighlightByLineCol(0, f.offset, f.byteLength);
+                    };
+                    val.addEventListener('mouseenter', show); val.addEventListener('focus', show);
+                    hex.addEventListener('mouseenter', show); hex.addEventListener('focus', show);
+                    val.addEventListener('mouseleave', hideHighlight); val.addEventListener('blur', hideHighlight);
+                    hex.addEventListener('mouseleave', hideHighlight); hex.addEventListener('blur', hideHighlight);
+
+                    box.appendChild(val); box.appendChild(hex);
+
+                    const meta = document.createElement('div');
+                    meta.className = 'meta';
+                    const signedTxt = f.pic?.signed ? ' • signed' : '';
+                    const decTxt = (f.pic?.decimals || 0) ? ` • dec:${f.pic.decimals}` : '';
+                    meta.textContent = `len:${f.byteLength} • ${usage}${signedTxt}${decTxt}`;
+
+                    row.append(lbl, box, meta);
+                    frag.appendChild(row);
+                    continue;
+                }
+
+                // DISPLAY / numeric as text
+                const inp = document.createElement('input');
+                const isNumeric = f.pic?.type === 'NUMERIC';
+                const digits = f.pic?.length || 0;
+                const decs = f.pic?.decimals || 0;
+                const signed = !!f.pic?.signed;
+
+                let maxLen;
+                if (isNumeric) maxLen = digits + (decs > 0 ? 1 : 0) + (signed ? 1 : 0);
+                else maxLen = f.byteLength;
+
+                inp.setAttribute('maxlength', String(maxLen));
+                inp.setAttribute('size', String(Math.min(maxLen, 24)));
+                if (isNumeric) inp.setAttribute('inputmode', 'decimal');
+
+                inp.autocomplete = 'off'; inp.spellcheck = false; inp.autocapitalize = 'off';
+
+                const initial = unpackField(buffer, f);
+                inp.value = String(initial);
+
+                inp.addEventListener('input', () => {
+                    if (isNumeric) {
+                        const norm = normalizeDecimalInput(inp.value, digits, decs, signed);
+                        if (inp.value !== norm) inp.value = norm;
+                    }
+                    packField(buffer, f, inp.value);
+                    renderRaw();
+                });
+
+                const show = () => {
+                    const s = store.get(); const { records, model, currentRecord } = s;
+                    if (records && model) positionHighlightByLineCol(currentRecord, f.offset, f.byteLength);
+                    else positionHighlightByLineCol(0, f.offset, f.byteLength);
+                };
+                inp.addEventListener('mouseenter', show);
+                inp.addEventListener('focus', show);
+                inp.addEventListener('mouseleave', hideHighlight);
+                inp.addEventListener('blur', hideHighlight);
+
+                row.append(lbl, inp);
+                frag.appendChild(row);
+            }
+            $form.appendChild(frag);
+        }
+
+        /**************************************************************
+         * RAW render
+         *************************************************************/
+        function renderRaw() {
+            const s = store.get();
+            const { records, buffer, model } = s;
+
+            if (records && records.length && model) {
+                // keep one line per record (replace embedded CR/LF from binaries)
+                const recsText = records.map(r => textDecoder.decode(r).replace(/[\r\n]/g, ' '));
+                $raw.value = recsText.join('\n');
+                $activeBytes.textContent = String(records.length * model.recordLength);
+            } else if (buffer) {
+                $raw.value = textDecoder.decode(buffer).replace(/[\r\n]/g, ' ');
+                $activeBytes.textContent = String(buffer.length);
+            } else {
+                $raw.value = ''; $activeBytes.textContent = '—';
+            }
+            renderStatus();
+        }
+
+        /**************************************************************
+         * Wiring (parser, presets, import/export, navigation)
+         *************************************************************/
+
+        for (const [key, value] of Object.entries(PRESET_COPYBOOKS)) {
+            const presetBtn = document.createElement('button');
+            presetBtn.innerHTML = key
+            presetBtn.addEventListener('click', () => {
+                $copybook.value = PRESET_COPYBOOKS[key] + "\n";
+                reparse();
+            });
+            $presetPicker.appendChild(presetBtn);
+        }
+
+        const $status = document.getElementById('status');
+
+        function resizeRecord(buf, newLen) {
+            const out = new Uint8Array(newLen);
+            out.fill(0x20);
+            out.set(buf.slice(0, newLen));
+            return out;
+        }
+
+        const reparse = debounce(() => {
+            const text = $copybook.value;
+            try {
+                const root = parseCopybook(text);
+                const model = resolveModel(root);
+                const s = store.get();
+                const newLen = model.recordLength;
+
+                if (s.records && s.records.length) {
+                    const resized = s.records.map(r => resizeRecord(r, newLen));
+                    const rv = s.recordVariants ? s.recordVariants.slice() : [];
+                    if (rv.length > resized.length) rv.length = resized.length;
+                    while (rv.length < resized.length) rv.push({});
+                    store.set({ model, records: resized, recordVariants: rv });
+                    store.setCurrentRecord(Math.min(s.currentRecord, resized.length - 1))
+                } else {
+                    const rec = new Uint8Array(newLen);
+                    rec.fill(0x20);
+                    store.set({ model });
+                    store.setRecords([rec]);
+                }
+                setStatus(true);
+            } catch (e) {
+                setStatus(false, (e && e.message) ? e.message : 'Parse error');
+            }
+        }, 200);
+
+        store.subscribe(() => { renderStatus(); renderRedefines(); renderForm(); renderRaw(); });
+
+        function splitFixedLength(bytes, recordLength) {
+            const count = Math.floor(bytes.length / recordLength);
+            const records = new Array(count);
+            for (let i = 0; i < count; i++) {
+                const rec = new Uint8Array(recordLength);
+                rec.set(bytes.slice(i * recordLength, (i + 1) * recordLength));
+                records[i] = rec;
+            }
+            const remainder = bytes.length % recordLength;
+            if (remainder) {
+                const last = new Uint8Array(recordLength);
+                last.fill(0x20);
+                last.set(bytes.slice(count * recordLength));
+                records.push(last);
+            }
+            return records;
+        }
+        function splitDelimited(text, recordLength, encoder = new TextEncoder()) {
+            const lines = text.replace(/\r/g, '').split('\n');
+            const records = [];
+            for (const line of lines) {
+                if (line.length === 0) continue;
+                const fixed = line.length < recordLength ? line.padEnd(recordLength, ' ') : line.slice(0, recordLength);
+                records.push(encoder.encode(fixed));
+            }
+            return records;
+        }
+        function concatRecords(records) {
+            if (!records || !records.length) return new Uint8Array(0);
+            const len = records[0].length;
+            const out = new Uint8Array(records.length * len);
+            for (let i = 0; i < records.length; i++) out.set(records[i], i * len);
+            return out;
+        }
+
+        $prevRecBtn.addEventListener('click', () => {
+            const s = store.get(); if (!s.records || !s.records.length) return;
+            store.setCurrentRecord(Math.max(0, s.currentRecord - 1));
+        });
+        $nextRecBtn.addEventListener('click', () => {
+            const s = store.get(); if (!s.records || !s.records.length) return;
+            store.setCurrentRecord(Math.min(s.records.length - 1, s.currentRecord + 1));
+        });
+        $gotoRecInput.addEventListener('change', () => {
+            const s = store.get(); const total = s.records?.length ?? 0; if (!total) return;
+            let idx = parseInt($gotoRecInput.value, 10); if (Number.isNaN(idx)) return;
+            idx = Math.min(Math.max(1, idx), total); store.setCurrentRecord(idx - 1);
+        });
+
+        $addRecBtn.addEventListener('click', () => {
+            const s = store.get(); const len = s.model?.recordLength; if (!len) return;
+            const rec = new Uint8Array(len); rec.fill(0x20); store.addRecord(rec);
+        });
+        $dupRecBtn.addEventListener('click', () => {
+            const s = store.get(); if (!s.records || !s.records.length) return;
+            store.duplicateRecord(s.currentRecord);
+            requestAnimationFrame(() => {
+                const cs = getComputedStyle($raw);
+                const padTop = parseFloat(cs.paddingTop) || 0;
+                const top = padTop + (store.get().currentRecord * (__lineHeightPx || 18));
+                $raw.scrollTop = top;
+            });
+        });
+        $delRecBtn.addEventListener('click', () => {
+            const s = store.get(); if (!s.records || !s.records.length) return;
+            const ok = confirm(`Delete record ${s.currentRecord + 1} of ${s.records.length}?`);
+            if (ok) store.deleteRecord(s.currentRecord);
+        });
+
+        $fileIn.addEventListener('change', async (ev) => {
+            const f = ev.target.files?.[0]; if (!f) return;
+            const { model } = store.get();
+            if (!model) { alert('Parse a copybook first.'); $fileIn.value = ''; return; }
+            const recordLength = model.recordLength; let records = [];
+            if ($importFixed.checked) {
+                const bytes = new Uint8Array(await f.arrayBuffer());
+                records = splitFixedLength(bytes, recordLength);
+            } else {
+                const text = await f.text();
+                records = splitDelimited(text, recordLength, textEncoder);
+            }
+            if (!records.length) { alert('No records found in file.'); $fileIn.value = ''; return; }
+            store.setRecords(records); $fileIn.value = '';
+        });
+
+        $exportBtn.addEventListener('click', () => {
+            const s = store.get(); if (!s.records || !s.records.length) { alert('No records'); return; }
+            if ($exportAsLines.checked) {
+                const text = s.records.map(buf => textDecoder.decode(buf)).join('\n');
+                const blob = new Blob([text], { type: 'text/plain;charset=us-ascii' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'records.txt';
+                document.body.appendChild(a); a.click(); a.remove();
+            } else {
+                const bytes = concatRecords(s.records);
+                const blob = new Blob([bytes], { type: 'application/octet-stream' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'records.dat';
+                document.body.appendChild(a); a.click(); a.remove();
+            }
+        });
+
+        $raw.addEventListener('input', debounce(() => {
+            const s = store.get(); const { model, records, currentRecord } = s;
+            const selectionStart = $raw.selectionStart, selectionEnd = $raw.selectionEnd;
+            if (!model) return;
+
+            if (records && records.length) {
+                const recLen = model.recordLength;
+                const lines = $raw.value.replace(/\r/g, '').split('\n');
+                const nextRecords = new Array(records.length);
+                for (let i = 0; i < records.length; i++) {
+                    const line = lines[i] ?? '';
+                    const fixed = line.length < recLen ? line.padEnd(recLen, ' ') : line.slice(0, recLen);
+                    nextRecords[i] = textEncoder.encode(fixed);
+                }
+                store.set({
+                    records: nextRecords,
+                    buffer: nextRecords[Math.min(currentRecord, nextRecords.length - 1)]
+                });
+            } else {
+                const recLen = model.recordLength;
+                const line = $raw.value.replace(/\r/g, '').split('\n')[0] ?? '';
+                const fixed = line.length < recLen ? line.padEnd(recLen, ' ') : line.slice(0, recLen);
+                const buf = textEncoder.encode(fixed);
+                store.replaceCurrentBuffer(buf);
+            }
+            $raw.setSelectionRange(selectionStart, selectionEnd);
+        }, 500));
+
+        reparse();
+        $copybook.addEventListener('input', reparse);
+    </script>
+</body>
+
+</html>
