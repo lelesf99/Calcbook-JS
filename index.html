@@ -522,7 +522,7 @@
            03  NR-INSCR-HDR-AB          PIC 9(014).
       *
            03  CONVENIO-HDR-AB          PIC X(020).
-           03  CONVENIO-HDR-AB-E        REDEFINES CONVENIO-HDR-ARQ.
+           03  CONVENIO-HDR-AB-E        REDEFINES CONVENIO-HDR-AB.
                05  NR-CTR-HDR-AB        PIC 9(009).
                05  CD-PRD-HDR-AB        PIC 9(004).
                05  FILLER               PIC X(005).
@@ -632,7 +632,7 @@
            03  FILLER                   PIC X(165).
            03  COD-OCOR-SEGA            PIC X(002) OCCURS 5 TIMES.
       *----------------------------TRLARQ------------------------------*
-       01  TRILERL-ARQUIVO              REDEFINES CNAB240.
+       01  TRAILER-ARQUIVO              REDEFINES CNAB240.
            03  CD-BANCO-TRLARQ          PIC 9(003).
            03  NR-LOTE-TRLARQ           PIC 9(004).
            03  REG-TIPO-9               PIC 9(001).
@@ -967,8 +967,23 @@
             return 'DISPLAY';
         }
 
+        function segmentLength(seg) {
+            if (!seg) return 0;
+
+            // Case: 9999
+            if (/^9+$/.test(seg)) {
+                return seg.length;
+            }
+
+            // Case: 9(003)
+            const m = seg.match(/^9\((\d+)\)$/);
+            if (m) {
+                return parseInt(m[1], 10);
+            }
+        }
+
         function parsePic(raw) {
-            let f = raw.toUpperCase();
+            let f = raw.toUpperCase().replace('.', '');
             let signed = false;
             if (f.startsWith('S')) { signed = true; f = f.slice(1); }
             if (f.startsWith('X')) {
@@ -976,19 +991,37 @@
                 const length = m ? parseInt(m[1], 10) : ((f.match(/X/g) || []).length);
                 return { raw, type: 'ALPHA', length, signed: false };
             }
+
             if (f.startsWith('9')) {
-                const m = f.match(/9\((\d+)\)(?:V9\((\d+)\))?/);
+                const m = f.match(/^(9+|9\(\d+\))(?:V(9+|9\(\d+\)))?$/);
+                console.log(f,m)
                 if (m) {
-                    const len = parseInt(m[1], 10) + (m[2] ? parseInt(m[2], 10) : 0);
-                    const decimals = m[2] ? parseInt(m[2], 10) : undefined;
-                    return { raw, type: 'NUMERIC', length: len, decimals, signed };
+                    const intLen = segmentLength(m[1]);
+                    const decLen = segmentLength(m[2]);
+
+                    return {
+                        raw,
+                        type: 'NUMERIC',
+                        length: intLen + decLen,
+                        decimals: decLen || undefined,
+                        signed
+                    };
                 }
+
+                // fallback parsing (should rarely be needed)
                 const parts = f.split('V');
                 const intLen = (parts[0].match(/9/g) || []).length;
                 const decLen = parts[1] ? (parts[1].match(/9/g) || []).length : 0;
-                return { raw, type: 'NUMERIC', length: intLen + decLen, decimals: decLen || undefined, signed };
+                return {
+                    raw,
+                    type: 'NUMERIC',
+                    length: intLen + decLen,
+                    decimals: decLen || undefined,
+                    signed
+                };
+
+                return undefined;
             }
-            return undefined;
         }
 
         function parseCopybook(text) {
@@ -1031,9 +1064,31 @@
                 const om = line.match(OCCURS_REGEX);
                 if (om) node.occurs = { times: parseInt(om[1], 10) };
 
-                // USAGE (COMP*)
-                const um = line.match(USAGE_REGEX);
-                if (um) node.usage = normalizeUsage(um[1]);
+
+                // USAGE (COMP*, BINARY, DISPLAY) — support 'USAGE [IS] ...' and trailing shorthand after PIC
+                let usageFound;
+                if (pm) {
+                    // Only look for usage in the tail that comes after the PIC clause
+                    const afterPic = line.slice(pm.index + pm[0].length);
+
+                    // First try the canonical clause: USAGE [IS] <usage>
+                    let um = afterPic.match(/\bUSAGE\s+(?:IS\s+)?([A-Z0-9\-]+)\b/i);
+                    if (!um) {
+                        // If not found, accept trailing shorthand like COMP-3 / COMP / COMP-5 / BINARY / DISPLAY / COMPUTATIONAL(-3)
+                        um = afterPic.match(/\b(COMP-3|COMP-5|COMP|COMPUTATIONAL-3|COMPUTATIONAL|BINARY|DISPLAY)\b/i);
+                        if (um) usageFound = um[1];
+                    } else {
+                        usageFound = um[1];
+                    }
+                } else {
+                    // No PIC clause matched; fall back to full-line search (least common but keeps old behavior working)
+                    let um = line.match(/\bUSAGE\s+(?:IS\s+)?([A-Z0-9\-]+)\b/i);
+                    if (!um) um = line.match(/\b(COMP-3|COMP-5|COMP|COMPUTATIONAL-3|COMPUTATIONAL|BINARY|DISPLAY)\b/i);
+                    if (um) usageFound = um[1];
+                }
+
+                if (usageFound) node.usage = normalizeUsage(usageFound);
+
 
                 // Attach by level
                 while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
