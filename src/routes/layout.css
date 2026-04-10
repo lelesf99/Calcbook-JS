@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto+Slab:wght@100..900&display=swap');
+
+:root {
+	--font-body: "Roboto Slab", serif;
+	--font-mono: "Roboto Mono", monospace;
+	--color-bg: #0e0f0f;
+	--color-bg-2: #393d3d;
+	--color-theme-1: #00ebd0;
+	--color-theme-2: #ffd700;
+	--color-error: #ff6e91;
+	--color-text: rgba(255, 255, 255, 0.9);
+	--color-text-secondary: rgba(255, 255, 255, 0.7);
+
+	
+
+	--gradient-bg: linear-gradient(-20deg,rgba(0, 235, 208, 0.1) 25%, rgba(255, 215, 0, 0.1) 100%);
+	--border-radius-pill: 999px;
+	--border-radius-1: .25rem;
+	--border-radius-2: .5rem;
+	--border-radius-3: 1rem;
+	--border-radius-circle: 50%;
+
+	--border-dashed: 2px dashed var(--color-bg-2);
+	font-family: var(--font-body);
+	color: var(--color-text);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	min-height: 100vh;
+	margin: 0;
+	background-attachment: fixed;
+	background-color: var(--color-bg);
+	color: var(--color-text);
+	font-family: var(--font-body);
+}
+
+h1 {
+	font-weight: 700;
+	margin: 1rem;
+}
+
+[data-tippy-root] *{
+	font-family: var(--font-mono);
+	white-space: nowrap;
+}
