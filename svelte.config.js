@@ -1,5 +1,5 @@
 import adapter from '@sveltejs/adapter-static';
-const repoName = 'calcbook-js';
+const repoName = 'Calcbook-JS';
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	kit: {
