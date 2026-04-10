@@ -5,15 +5,14 @@
 	import { PRESET_COPYBOOKS } from '$lib/services/presets.service';
 
 	import { model, setModel, setRecords } from '$lib/stores/editor.store';
+	import { debounce } from '$lib/utils/debounce';
 	import Button from './Button.svelte';
 
 	let copybookText = $state('');
 	let error = $state('');
-
-	function applyPreset(name: string) {
-		copybookText = PRESET_COPYBOOKS[name] + '\n';
+	function processCopybook(text) {
 		try {
-			const m = resolveModel(parseCopybook(copybookText));
+			const m = resolveModel(parseCopybook(text));
 			setModel(m);
 
 			const rec = new Uint8Array(m.recordLength);
@@ -25,6 +24,21 @@
 			error = e?.message ?? 'Erro ao processar copybook';
 		}
 	}
+	const debouncedProcessCopybook = debounce(processCopybook, 300);
+	function applyPreset(name: string) {
+		copybookText = PRESET_COPYBOOKS[name] + '\n';
+		processCopybook(copybookText);
+	}
+
+	$effect(() => {
+		if (!copybookText?.trim()) {
+			setModel(null);
+			error = '';
+			return;
+		}
+
+		debouncedProcessCopybook(copybookText);
+	});
 </script>
 
 <h3>Editor Copybook</h3>
@@ -33,11 +47,11 @@
 	{#each Object.keys(PRESET_COPYBOOKS) as key}
 		<Button onclick={() => applyPreset(key)}>
 			{key}
-        </Button>
+		</Button>
 	{/each}
 </PillNav>
 
-<textarea bind:value={copybookText} ></textarea>
+<textarea bind:value={copybookText}></textarea>
 
 <div class="status">
 	<b>len: {$model ? $model.recordLength : '—'}</b>
