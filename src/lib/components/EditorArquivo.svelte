@@ -176,8 +176,14 @@
 		<div class="muted">Nenhum modelo ativo</div>
 	{:else}
 		{#each fields as field (field.name + ':' + field.offset)}
-			{#if field.usage === 'COMP-3' || field.usage === 'COMP' || field.usage === 'BINARY' || field.usage === 'COMP-5'}
+			{#if field.usage === 'COMP-3'}
+				<!-- <FieldComp3Input {field} />
+			{:else if field.usage === 'COMP'}
+				<FieldCompInput {field} />
+			{:else if field.usage === 'BINARY'} -->
 				<FieldBinaryInput {field} />
+			<!-- {:else if field.usage === 'COMP-5'}
+				<FieldComp5Input {field} /> -->
 			{:else}
 				<FieldInput {field} />
 			{/if}
