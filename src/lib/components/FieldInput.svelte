@@ -1,9 +1,7 @@
 <script lang="ts">
-	import { buffer, rawHighlight, updateBuffer, currentRecordIndex } from '$lib/stores/editor.store';
-	import { unpackField, packField } from '$lib/domain/encoding/display';
 	import { tooltip } from '$lib/attachments/tooltip';
-	import { get } from 'svelte/store';
-	import { onMount } from 'svelte';
+	import { packField, unpackField } from '$lib/domain/encoding/display';
+	import { activeField, buffer, updateBuffer } from '$lib/stores/editor.store';
 
 	let { field } = $props();
 
@@ -23,32 +21,20 @@
 			packField(buf, field, fValue);
 		});
 	}
-
-	function showHighlight() {
-		rawHighlight.set({
-			recordIndex: get(currentRecordIndex),
-			offset: field.offset,
-			length: field.byteLength
-		});
-	}
-	function hideHighlight() {
-		rawHighlight.set(null);
-	}
 </script>
 
 <div class="field" style:flex-basis={`calc(${field.byteLength}ch + 3.5rem)`}>
 	<input
-		{@attach tooltip(tooltipText)}
+		{@attach tooltip(tooltipText, 'focus')}
 		placeholder={field.pic?.type === 'NUMERIC'
 			? '9'.repeat(field.byteLength)
 			: 'X'.repeat(field.byteLength)}
 		name={field.name}
 		bind:value={fValue}
 		oninput={onInput}
-		onfocus={showHighlight}
-		onblur={hideHighlight}
+		onfocus={() => activeField.set(field)}
+		onblur={() => activeField.set(null)}
 		maxlength={field.byteLength}
-		
 		inputmode={field.pic?.type === 'NUMERIC' ? 'decimal' : 'text'}
 		autocapitalize="off"
 		autocorrect="off"
@@ -90,6 +76,7 @@
 	}
 
 	.field input:focus {
+		border-radius: var(--border-radius-pill);
 		background: var(--color-theme-1);
 		outline: 0.8rem solid var(--color-theme-1);
 		outline-offset: -0.5rem;

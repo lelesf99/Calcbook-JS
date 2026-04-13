@@ -1,19 +1,13 @@
-import { writable, derived, get } from 'svelte/store';
 import type { ResolvedModel } from '$lib/domain/copybook/types';
+import { derived, get, writable } from 'svelte/store';
 
-export interface RawHighlight {
-	recordIndex: number;
-	offset: number;
-	length: number;
-}
 export interface ActiveField {
 	name: string;
 	recordIndex: number;
 	offset: number;
-	length: number;
+	byteLength: number;
 }
 export const activeField = writable<ActiveField | null>(null);
-export const rawHighlight = writable<RawHighlight | null>(null);
 
 export const model = writable<ResolvedModel | null>(null);
 export const records = writable<Uint8Array[]>([]);
@@ -74,3 +68,30 @@ export function setActiveField(field: ActiveField | null) {
 export function clearActiveField() {
 	activeField.set(null);
 }
+
+model.subscribe((newModel) => {
+	if (!newModel) {
+		activeField.set(null);
+		return;
+	}
+
+	const af = get(activeField);
+	if (!af) return;
+
+	// tenta achar o mesmo campo pelo name
+	const newField = newModel.fieldsFlat.find((f) => f.name === af.name);
+
+	if (!newField) {
+		// campo não existe mais
+		activeField.set(null);
+		return;
+	}
+
+	// reaplica highlight semanticamente
+	activeField.set({
+		name: newField.name,
+		recordIndex: get(currentRecordIndex),
+		offset: newField.offset,
+		byteLength: newField.byteLength
+	});
+});

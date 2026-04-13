@@ -197,7 +197,7 @@
 		margin-right: 1rem;
 	}
 	#recInput {
-		font-size: large;
+		font-size: medium;
 		padding: 0.8rem 0rem 0.8rem 1rem;
 		margin-inline: 0.5rem;
 		font-family: var(--font-body);
@@ -232,7 +232,7 @@
 		background-color: var(--color-error);
 		outline-offset: 2px;
 	}
-	label[for="recInput"] {
+	label[for='recInput'] {
 		margin-left: 1rem;
 	}
 
@@ -245,8 +245,8 @@
 	}
 	.form {
 		display: flex;
-		max-height: 200px;
 		flex-wrap: wrap;
+		flex: 1 0 30%;
 		border: var(--border-dashed);
 		border-radius: var(--border-radius-2);
 		padding: 2rem 1rem 1rem;

@@ -18,6 +18,7 @@ import EditorArquivo from '$lib/components/EditorArquivo.svelte';
 
 <style>
 	section {
+		height: calc(100vh - 2rem);
 		display: flex;
 		flex-direction: column;
 		min-width: 0;

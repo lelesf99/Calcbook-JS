@@ -1,10 +1,17 @@
 <script lang="ts">
-	import { records, currentRecordIndex } from '$lib/stores/editor.store';
+	import {
+		activeField,
+		buffer,
+		currentRecordIndex,
+		records
+	} from '$lib/stores/editor.store';
 	import { inview } from 'svelte-inview';
+	import { get } from 'svelte/store';
 
 	const decoder = new TextDecoder('ascii');
 	const recordButtons: HTMLButtonElement[] = [];
 	let isInView: boolean[] = [];
+	let highlight: Highlight;
 
 	function scrollToCurrentRecord() {
 		recordButtons[$currentRecordIndex]?.scrollIntoView({
@@ -16,8 +23,34 @@
 	function selectRecord(index: number) {
 		currentRecordIndex.set(index);
 	}
+	function createHighlight() {
+		const field = get(activeField);
+		if (!CSS.highlights) {
+			console.log('CSS Custom Highlight API not supported.');
+			return;
+		}
+		CSS.highlights.clear();
+		if (!field) return;
+		const preEl = recordButtons[$currentRecordIndex]?.querySelector('pre');
+		if (!preEl) return;
+		const textNode = preEl.firstChild;
+		console.log(textNode, textNode.nodeType === Node.TEXT_NODE);
+		if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+			const range = new Range();
+			range.setStart(textNode, field.offset);
+			range.setEnd(textNode, field.offset + field.byteLength);
+
+			highlight = new Highlight(range);
+			console.log(field.offset, field.offset, field.byteLength);
+			CSS.highlights.set('raw-highlight', highlight);
+			console.log(CSS.highlights.values().toArray());
+		}
+	}
 	$effect(() => {
 		if (!isInView[$currentRecordIndex]) scrollToCurrentRecord();
+		$activeField;
+		$buffer;
+		createHighlight();
 		return () => {};
 	});
 </script>
@@ -28,30 +61,30 @@
 			<span># Registro</span>
 		</div>
 		{#each $records as record, i}
-			<button
-				use:inview
-				oninview_change={(event) => (isInView[i] = event.detail.inView)}
-				bind:this={recordButtons[i]}
-				class:current-record={$currentRecordIndex === i}
-				type="button"
-				class="table-row"
-				onclick={() => selectRecord(i)}
-			>
+			<div class="table-row" class:current-record={$currentRecordIndex === i}>
 				<span class="row-index">{i + 1}</span>
-				<pre>{decoder.decode(record)}</pre>
-			</button>
+				<button
+					use:inview
+					oninview_change={(event) => (isInView[i] = event.detail.inView)}
+					bind:this={recordButtons[i]}
+					type="button"
+					onclick={() => selectRecord(i)}
+				>
+					<pre>{decoder.decode(record)}</pre>
+				</button>
+			</div>
 		{/each}
 	</div>
 </div>
 
 <style>
 	.container {
+		flex: 1 0 40%;
 		overflow: auto;
 		background-color: var(--color-bg);
 		border-radius: var(--border-radius-2);
 		padding: 2px;
 		padding-right: 7px;
-		max-height: 550px;
 	}
 	.file-table {
 		font-family: var(--font-mono);
@@ -69,8 +102,6 @@
 		border-radius: var(--border-radius-1);
 		width: 100%;
 		padding: 0 1rem;
-		height: 3rem;
-		font-size: large;
 		transition: all 50ms ease-out;
 	}
 	.table-row:nth-child(odd):not(.table-header) {
@@ -97,10 +128,14 @@
 		z-index: 10;
 	}
 	button {
+		font-size: large;
 		cursor: pointer;
 		background-color: transparent;
 		border: none;
 		color: var(--color-text);
 		white-space: nowrap;
+	}
+	::highlight(raw-highlight) {
+		background-color: var(--color-muted-2);
 	}
 </style>

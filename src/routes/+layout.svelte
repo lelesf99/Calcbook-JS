@@ -21,7 +21,8 @@
 	}
 
 	main {
-		flex: 1;
+		flex-grow: 0;
+		height: 100vh;
 		display: grid;
 		grid-template-areas: 
 			'copybook' 'arquivo';
