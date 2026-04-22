@@ -1,22 +1,21 @@
 <script lang="ts">
 	import { tooltip } from '$lib/attachments/tooltip';
-	import { packField } from '$lib/encoding/resolveFieldType';
-	import { activeField, updateBuffer } from '$lib/stores/editor.store';
+	import { packField, unpackField } from '$lib/encoding/resolveFieldType';
+	import { activeField, buffer, updateBuffer } from '$lib/stores/editor.store';
 	import type { FieldResolved } from '$lib/types';
 	import { Plus, Minus } from '@lucide/svelte';
 	import Button from './Button.svelte';
 
-	let { field } = $props();
+	let { field, tooltipText = '', ...others } = $props();
 	let inputRef;
 	let value = $state('');
 	let fValue = $derived(formatValue(value));
 	let isNegative = $state(false);
 
-	const tooltipText = `${field.name} : ${field.pic?.raw} : [${field.offset}..${field.offset + field.byteLength - 1}]`;
-
 	$effect(() => {
-		
+		value = formatValue(unpackField($buffer, field));
 	});
+
 	function onInput(e) {
 		if (field.pic?.type === 'NUMERIC') value = (e.target as HTMLInputElement).value;
 		updateBuffer((buf) => {
@@ -24,7 +23,7 @@
 		});
 	}
 	function parseValue(value: string) {
-		console.log(`parsing: ${value}`)
+		console.log(`parsing: ${value}`);
 		return (field.pic?.signed ? (isNegative ? '-' : '+') : '') + value.replace(/\D/g, '');
 	}
 	function formatValue(value: string) {
@@ -111,7 +110,6 @@
 		bind:this={inputRef}
 		{@attach tooltip(tooltipText, 'focus')}
 		placeholder={buildPlaceholder(field)}
-		name={field.name}
 		bind:value={fValue}
 		oninput={onInput}
 		onfocus={() => activeField.set(field)}
@@ -122,6 +120,7 @@
 		autocorrect="off"
 		spellcheck="false"
 		autocomplete="off"
+		{...others}
 	/>
 </div>
 

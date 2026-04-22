@@ -19,6 +19,7 @@
 
 	let fields = $state<FieldResolved[]>([]);
 	let recInputValue = $state(1);
+	let layoutToggle = $state('flex');
 
 	$effect(() => {
 		fields = $model ? visibleFields($model, $activeVariant) : [];
@@ -165,12 +166,21 @@
 	</PillNav>
 	<RedefinesBar />
 </div>
-<div class="form">
+<div class={['form', layoutToggle]}>
 	{#if !$model || !$buffer}
 		<div class="muted">Nenhum modelo ativo</div>
 	{:else}
 		{#each fields as field (field.name + ':' + field.offset)}
-			<FieldInput {field} />
+			{#if layoutToggle === 'list'}
+				<label for={field.name}></label>
+				<FieldInput {field} name={field.name} />
+			{:else}
+				<FieldInput
+					name={field.name}
+					{field}
+					tooltipText={`${field.name} : ${field.pic?.raw} : [${field.offset}..${field.offset + field.byteLength - 1}]`}
+				/>
+			{/if}
 		{/each}
 	{/if}
 </div>
@@ -242,5 +252,7 @@
 		padding: 2rem 1rem 1rem;
 		overflow: auto;
 		min-height: 0;
+	}
+	.form.list {
 	}
 </style>
