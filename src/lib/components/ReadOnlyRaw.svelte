@@ -3,7 +3,8 @@
 		activeField,
 		buffer,
 		currentRecordIndex,
-		records
+		records,
+		type ActiveField
 	} from '$lib/stores/editor.store';
 	import { inview } from 'svelte-inview';
 	import { get } from 'svelte/store';
@@ -12,12 +13,20 @@
 	const recordButtons: HTMLButtonElement[] = [];
 	let isInView: boolean[] = [];
 	let highlight: Highlight;
+	let tableContainer: HTMLDivElement;
 
-	function scrollToCurrentRecord() {
-		recordButtons[$currentRecordIndex]?.scrollIntoView({
+	function scrollToCurrentRecord(): void {
+		recordButtons[$currentRecordIndex]?.parentElement?.scrollIntoView({
 			behavior: 'smooth',
-			block: 'center',
+			block: 'start',
 			inline: 'nearest'
+		});
+	}
+	function scrollToActiveField(field: ActiveField): void {
+		if (!field) return;
+		tableContainer.scrollTo({
+			left: field.offset * 8,
+			behavior: 'smooth'
 		});
 	}
 	function selectRecord(index: number) {
@@ -34,28 +43,27 @@
 		const preEl = recordButtons[$currentRecordIndex]?.querySelector('pre');
 		if (!preEl) return;
 		const textNode = preEl.firstChild;
-		console.log(textNode, textNode.nodeType === Node.TEXT_NODE);
+
 		if (textNode && textNode.nodeType === Node.TEXT_NODE) {
 			const range = new Range();
 			range.setStart(textNode, field.offset);
 			range.setEnd(textNode, field.offset + field.byteLength);
 
 			highlight = new Highlight(range);
-			console.log(field.offset, field.offset, field.byteLength);
+
 			CSS.highlights.set('raw-highlight', highlight);
-			console.log(CSS.highlights.values().toArray());
 		}
 	}
 	$effect(() => {
 		if (!isInView[$currentRecordIndex]) scrollToCurrentRecord();
-		$activeField;
+		scrollToActiveField($activeField);
 		$buffer;
 		createHighlight();
 		return () => {};
 	});
 </script>
 
-<div class="container">
+<div class="container" bind:this={tableContainer}>
 	<div class="file-table">
 		<div class="table-header table-row">
 			<span># Registro</span>
@@ -79,12 +87,12 @@
 
 <style>
 	.container {
-		flex: 1 0 40%;
 		overflow: auto;
 		background-color: var(--color-bg);
 		border-radius: var(--border-radius-2);
 		padding: 2px;
 		padding-right: 7px;
+		scroll-margin-block: 4rem;
 	}
 	.file-table {
 		font-family: var(--font-mono);

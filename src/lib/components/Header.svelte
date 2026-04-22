@@ -4,6 +4,7 @@
 	import CheckboxInput from '$lib/components/CheckboxInput.svelte';
 	import PillNav from '$lib/components/PillNav.svelte';
 	import RadioGroup from '$lib/components/RadioGroup.svelte';
+	import { asciiToEbcdic, ebcdicToAscii } from '$lib/encoding/ebcdic';
 	import { buffer, model, records, setRecords } from '$lib/stores/editor.store';
 	import Download from '@lucide/svelte/icons/download';
 	import FileUp from '@lucide/svelte/icons/file-up';
@@ -33,13 +34,23 @@
 			if (!file) return;
 
 			const recordLength = $model.recordLength;
-
 			let records: Uint8Array[] = [];
 
-			if (importMode === 'fixed-blocked') {
-				const bytes = new Uint8Array(await file.arrayBuffer());
-				records = splitFixedRecords(bytes, recordLength);
-			} else {
+			// -------------------------------
+			// IMPORTAÇÃO BINÁRIA (EBCDIC)
+			// -------------------------------
+			if (file.name.endsWith('.dat')) {
+				const ebcdicBytes = new Uint8Array(await file.arrayBuffer());
+
+				// 🔑 CONVERSÃO AQUI
+				const asciiBytes = ebcdicToAscii(ebcdicBytes);
+
+				records = splitFixedRecords(asciiBytes, recordLength);
+			}
+			// -------------------------------
+			// IMPORTAÇÃO TEXTO (ASCII)
+			// -------------------------------
+			else {
 				const text = await file.text();
 				records = splitLineRecords(text, recordLength);
 			}
@@ -48,7 +59,7 @@
 				alert('Nenhum registro encontrado no arquivo.');
 				return;
 			}
-			console.log(get(buffer), records);
+
 			setRecords(records);
 		};
 
@@ -62,20 +73,30 @@
 
 		const recordLength = $model.recordLength;
 
+		// -------------------------------
+		// EXPORTAÇÃO TEXTO (ASCII)
+		// -------------------------------
 		if (exportChecked) {
 			const text = $records.map((r) => decoder.decode(r)).join('\n');
 
 			downloadBlob(text, 'records.txt', 'text/plain');
-		} else {
-			const totalLength = recordLength * $records.length;
-			const out = new Uint8Array(totalLength);
-
-			$records.forEach((rec, i) => {
-				out.set(rec, i * recordLength);
-			});
-
-			downloadBlob(out.buffer, 'records.dat', 'application/octet-stream');
+			return;
 		}
+
+		// -------------------------------
+		// EXPORTAÇÃO BINÁRIA (EBCDIC)
+		// -------------------------------
+		const totalLength = recordLength * $records.length;
+		const asciiOut = new Uint8Array(totalLength);
+
+		$records.forEach((rec, i) => {
+			asciiOut.set(rec, i * recordLength);
+		});
+
+		// 🔑 CONVERSÃO AQUI
+		const ebcdicOut = asciiToEbcdic(asciiOut);
+
+		downloadBlob((ebcdicOut.buffer as ArrayBuffer), 'records.dat', 'application/octet-stream');
 	}
 
 	function downloadBlob(data: string | ArrayBuffer, filename: string, type: string) {

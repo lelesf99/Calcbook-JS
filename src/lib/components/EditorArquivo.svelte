@@ -1,33 +1,27 @@
 <script lang="ts">
+	import { tooltip } from '$lib/attachments/tooltip';
 	import {
-		model,
-		buffer,
 		activeVariant,
+		buffer,
 		currentRecordIndex,
+		model,
 		records,
 		recordVariants
 	} from '$lib/stores/editor.store';
-
+	import type { FieldResolved } from '$lib/types';
 	import { visibleFields } from '$lib/utils/visibility';
-	import FieldInput from '$lib/components/FieldInput.svelte';
-	import FieldBinaryInput from '$lib/components/FieldBinaryInput.svelte';
-
-	import ReadOnlyRaw from './ReadOnlyRaw.svelte';
-	import RedefinesBar from '$lib/components/RedefinesBar.svelte';
+	import { ArrowDownToLine, ArrowUpToLine, Copy, Plus, Trash } from '@lucide/svelte';
 	import Button from './Button.svelte';
+	import FieldInput from './FieldInput.svelte';
 	import PillNav from './PillNav.svelte';
-	import ArrowUpToLine from '@lucide/svelte/icons/arrow-up-to-line';
-	import Plus from '@lucide/svelte/icons/plus';
-	import ArrowDownToLine from '@lucide/svelte/icons/arrow-down-to-line';
-	import Copy from '@lucide/svelte/icons/copy';
-	import Trash from '@lucide/svelte/icons/trash';
-	import { tooltip } from '$lib/attachments/tooltip';
+	import ReadOnlyRaw from './ReadOnlyRaw.svelte';
+	import RedefinesBar from './RedefinesBar.svelte';
 
-	let fields = $state([]);
+	let fields = $state<FieldResolved[]>([]);
 	let recInputValue = $state(1);
 
 	$effect(() => {
-		fields = $model && $buffer ? visibleFields($model, $activeVariant) : [];
+		fields = $model ? visibleFields($model, $activeVariant) : [];
 		recInputValue = $currentRecordIndex + 1;
 		return () => {};
 	});
@@ -176,21 +170,10 @@
 		<div class="muted">Nenhum modelo ativo</div>
 	{:else}
 		{#each fields as field (field.name + ':' + field.offset)}
-			{#if field.usage === 'COMP-3'}
-				<!-- <FieldComp3Input {field} />
-			{:else if field.usage === 'COMP'}
-				<FieldCompInput {field} />
-			{:else if field.usage === 'BINARY'} -->
-				<FieldBinaryInput {field} />
-			<!-- {:else if field.usage === 'COMP-5'}
-				<FieldComp5Input {field} /> -->
-			{:else}
-				<FieldInput {field} />
-			{/if}
+			<FieldInput {field} />
 		{/each}
 	{/if}
 </div>
-<!-- <RawRecordEditor /> -->
 <ReadOnlyRaw />
 
 <style>
@@ -252,7 +235,8 @@
 	.form {
 		display: flex;
 		flex-wrap: wrap;
-		flex: 1 0 30%;
+		max-height: 220px;
+		flex-shrink: 0;
 		border: var(--border-dashed);
 		border-radius: var(--border-radius-2);
 		padding: 2rem 1rem 1rem;

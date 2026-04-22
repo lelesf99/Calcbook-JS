@@ -1,11 +1,11 @@
 <script lang="ts">
 	import PillNav from '$lib/components/PillNav.svelte';
-	import { parseCopybook } from '$lib/domain/copybook/parseCopybook';
-	import { resolveModel } from '$lib/domain/copybook/resolveModel';
-	import { PRESET_COPYBOOKS } from '$lib/services/presets.service';
+	import { parseCopybook } from '$lib/parser/parseCopybook';
+	import { resolveModel } from '$lib/parser/resolveModel';
+	import { PRESET_COPYBOOKS } from '$lib/presets';
 
 	import { model, setModel, setRecords } from '$lib/stores/editor.store';
-	import { debounce } from '$lib/utils/debounce';
+	import {debounce} from '$lib/utils/debounce';
 	import Button from './Button.svelte';
 
 	let copybookText = $state('');

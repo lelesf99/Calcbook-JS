@@ -32,3 +32,10 @@ export interface ResolvedModel {
 	redefineGroups: Record<string, string[]>;
 	nameIndex: number;
 }
+
+export type FieldKind =
+    | 'DISPLAY'
+    | 'COMP-1'
+    | 'COMP-2'
+    | 'COMP-3'
+    | 'BINARY';

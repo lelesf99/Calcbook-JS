@@ -1,11 +1,15 @@
-import type { CopybookNode, FieldResolved, ResolvedModel } from "./types";
+import type { CopybookNode, FieldResolved, ResolvedModel } from '../types';
 
-function storageLength(node) {
+function storageLength(node: CopybookNode) {
 	const usage = (node.usage || 'DISPLAY').toUpperCase();
 	const pic = node.pic;
 	if (!pic) return 0;
 
 	if (usage === 'DISPLAY') return pic.length;
+
+	if(usage === 'COMP-1') return 4;
+
+	if(usage === 'COMP-2') return 8;
 
 	if (usage === 'COMP' || usage === 'BINARY' || usage === 'COMP-5') {
 		const totalDigits = pic.type === 'NUMERIC' ? pic.length : 0;
@@ -19,7 +23,7 @@ function storageLength(node) {
 	}
 	return pic.length;
 }
-export function resolveModel(root:CopybookNode[]): ResolvedModel {
+export function resolveModel(root: CopybookNode[]): ResolvedModel {
 	// name index
 	const nameIndex = new Map();
 	(function indexNodes(nodes: CopybookNode[]) {
@@ -49,7 +53,7 @@ export function resolveModel(root:CopybookNode[]): ResolvedModel {
 	for (const [base, arr] of Object.entries(redefineGroups))
 		for (const m of arr) memberToBase[m] = base;
 
-	const sizeOf = (node) => {
+	const sizeOf = (node: CopybookNode) => {
 		if (node.children.length && !node.pic && !node.redefines) {
 			let total = 0;
 			for (const c of node.children) total += sizeOf(c);
@@ -57,6 +61,7 @@ export function resolveModel(root:CopybookNode[]): ResolvedModel {
 			return total * times;
 		}
 		const len = node.pic ? storageLength(node) : 0;
+
 		const times = node.occurs?.times ?? 1;
 		return len * times;
 	};

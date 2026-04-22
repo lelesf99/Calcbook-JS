@@ -1,4 +1,4 @@
-import type { CopybookNode, Pic, PicType } from './types';
+import type { CopybookNode, Pic, PicType } from '../types';
 
 const PIC_REGEX = /PIC(TURE)?\s+([A-Za-z0-9()V\.]+)/i;
 const OCCURS_REGEX = /OCCURS\s+(\d+)\s+TIMES/i;
@@ -8,7 +8,7 @@ const USAGE_REGEX = /USAGE\s+(?:IS\s+)?([A-Z0-9\-]+)/i;
 function normalizeUsage(u) {
 	if (!u) return undefined;
 	const x = u.toUpperCase();
-	if (x === 'COMP' || x === 'COMPUTATIONAL' || x === 'BINARY' || x === 'COMP-5') return x;
+	if (x === 'COMP' || x === 'COMP-1' || x === 'COMP-2' || x === 'COMPUTATIONAL' || x === 'BINARY' || x === 'COMP-5') return x;
 	if (x === 'COMP-3' || x === 'COMPUTATIONAL-3' || x === 'PACKED-DECIMAL') return 'COMP-3';
 	return 'DISPLAY';
 }
@@ -148,7 +148,7 @@ export function parseCopybook(text): CopybookNode[] {
 			if (!um) {
 				// If not found, accept trailing shorthand like COMP-3 / COMP / COMP-5 / BINARY / DISPLAY / COMPUTATIONAL(-3)
 				um = afterPic.match(
-					/\b(COMP-3|COMP-5|COMP|COMPUTATIONAL-3|COMPUTATIONAL|BINARY|DISPLAY)\b/i
+					/\b(COMP-1|COMP-2|COMP-3|COMP-5|COMP|COMPUTATIONAL-3|COMPUTATIONAL|BINARY|DISPLAY)\b/i
 				);
 				if (um) usageFound = um[1];
 			} else {
@@ -158,7 +158,7 @@ export function parseCopybook(text): CopybookNode[] {
 			// No PIC clause matched; fall back to full-line search (least common but keeps old behavior working)
 			let um = line.match(/\bUSAGE\s+(?:IS\s+)?([A-Z0-9\-]+)\b/i);
 			if (!um)
-				um = line.match(/\b(COMP-3|COMP-5|COMP|COMPUTATIONAL-3|COMPUTATIONAL|BINARY|DISPLAY)\b/i);
+				um = line.match(/\b(COMP-1|COMP-2|COMP-3|COMP-5|COMP|COMPUTATIONAL-3|COMPUTATIONAL|BINARY|DISPLAY)\b/i);
 			if (um) usageFound = um[1];
 		}
 

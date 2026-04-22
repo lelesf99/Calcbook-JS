@@ -1,41 +1,123 @@
 <script lang="ts">
 	import { tooltip } from '$lib/attachments/tooltip';
-	import { packField, unpackField } from '$lib/domain/encoding/display';
-	import { activeField, buffer, updateBuffer } from '$lib/stores/editor.store';
+	import { packField } from '$lib/encoding/resolveFieldType';
+	import { activeField, updateBuffer } from '$lib/stores/editor.store';
+	import type { FieldResolved } from '$lib/types';
+	import { Plus, Minus } from '@lucide/svelte';
+	import Button from './Button.svelte';
 
 	let { field } = $props();
+	let inputRef;
+	let value = $state('');
+	let fValue = $derived(formatValue(value));
+	let isNegative = $state(false);
 
-	let fValue = $state('');
-	let semaforo = true;
 	const tooltipText = `${field.name} : ${field.pic?.raw} : [${field.offset}..${field.offset + field.byteLength - 1}]`;
 
 	$effect(() => {
-		if ($buffer && semaforo) {
-			fValue = unpackField($buffer, field);
-		}
-		semaforo = true;
+		
 	});
-	function onInput(e: Event) {
-		semaforo = false;
+	function onInput(e) {
+		if (field.pic?.type === 'NUMERIC') value = (e.target as HTMLInputElement).value;
 		updateBuffer((buf) => {
-			packField(buf, field, fValue);
+			packField(buf, field, parseValue(value));
 		});
+	}
+	function parseValue(value: string) {
+		console.log(`parsing: ${value}`)
+		return (field.pic?.signed ? (isNegative ? '-' : '+') : '') + value.replace(/\D/g, '');
+	}
+	function formatValue(value: string) {
+		const pic = field.pic;
+		if (!pic) return value;
+		if (!value) return value;
+
+		if (pic.type === 'NUMERIC') {
+			const intSize = field.byteLength - pic.decimals;
+
+			let digits = value.replace(/\D/g, '');
+			if (digits.length > intSize) {
+				const int = digits.slice(0, intSize);
+				const dec = digits.slice(-(digits.length - intSize));
+				console.log(-Math.max(0, digits.length - intSize));
+				digits = dec ? `${int}.${dec}` : int;
+			}
+			return digits;
+		}
+		return value;
+	}
+	function buildPlaceholder(field: FieldResolved): string {
+		if (!field.pic) return '';
+
+		// -----------------------------
+		// ALPHANUMERIC
+		// -----------------------------
+		if (field.pic.type === 'ALPHA') {
+			return 'X'.repeat(field.byteLength);
+		}
+
+		// -----------------------------
+		// NUMERIC
+		// -----------------------------
+		if (field.pic.type === 'NUMERIC') {
+			const signed = !!field.pic.signed;
+			const decimals = field.pic.decimals ?? 0;
+
+			const totalDigits = field.byteLength;
+			const intDigits = totalDigits - decimals;
+
+			let placeholder = '';
+
+			// parte inteira
+			placeholder += '9'.repeat(intDigits);
+
+			// parte decimal lógica
+			if (decimals > 0) {
+				placeholder += '.' + '9'.repeat(decimals);
+			}
+
+			return placeholder;
+		}
+
+		return '';
 	}
 </script>
 
-<div class="field" style:flex-basis={`calc(${field.byteLength}ch + 3.5rem)`}>
+<div
+	class="field"
+	style:flex-basis={`calc(${field.byteLength + (field.pic?.signed ? 1 : 0)}ch + 2.4rem ${field.pic?.signed ? '+ 2.6rem' : ''} ${field.pic?.decimals ? '+ 1.5rem' : ''})`}
+>
+	{#if field.pic?.signed}
+		<Button
+			onclick={() => {
+				isNegative = !isNegative;
+				inputRef.dispatchEvent(
+					new Event('input', {
+						bubbles: true,
+						cancelable: true
+					})
+				);
+			}}
+			muted
+		>
+			{#if !isNegative}
+				<Plus size={16} strokeWidth={3} />
+			{:else}
+				<Minus size={16} strokeWidth={3} />
+			{/if}
+		</Button>
+	{/if}
 	<input
+		bind:this={inputRef}
 		{@attach tooltip(tooltipText, 'focus')}
-		placeholder={field.pic?.type === 'NUMERIC'
-			? '9'.repeat(field.byteLength)
-			: 'X'.repeat(field.byteLength)}
+		placeholder={buildPlaceholder(field)}
 		name={field.name}
 		bind:value={fValue}
 		oninput={onInput}
 		onfocus={() => activeField.set(field)}
 		onblur={() => activeField.set(null)}
-		maxlength={field.byteLength}
 		inputmode={field.pic?.type === 'NUMERIC' ? 'decimal' : 'text'}
+		maxlength={field.byteLength + (field.pic?.decimals ? 1 : 0)}
 		autocapitalize="off"
 		autocorrect="off"
 		spellcheck="false"
@@ -47,10 +129,8 @@
 	.field {
 		position: relative;
 		display: flex;
-		flex-direction: column;
-		align-items: baseline;
-		gap: 0.2rem;
-		padding: 1rem;
+		align-items: center;
+		padding: 0.5rem;
 		border-bottom: 1px dashed #222;
 		color: var(--color-text);
 		font-family: var(--font-mono);
@@ -68,6 +148,7 @@
 		border: 2px solid #333;
 		border-radius: var(--border-radius-2);
 		padding: 0.8rem 0.5rem;
+
 		transition:
 			background 300ms,
 			color 300ms,
@@ -88,5 +169,15 @@
 		color: #666;
 		font-style: italic;
 		font-family: var(--font-mono);
+	}
+	input::-webkit-outer-spin-button,
+	input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
+	/* Firefox */
+	input[type='number'] {
+		-moz-appearance: textfield;
 	}
 </style>

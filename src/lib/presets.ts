@@ -177,5 +177,94 @@ export const PRESET_COPYBOOKS = {
            03  QTD-LOTES-TRLARQ         PIC 9(006).
            03  QTD-REG-TRLARQ           PIC 9(006).
            03  QTD-CTAS-TRLARQ          PIC 9(006).
-           03  FILLER                   PIC X(205).`
+           03  FILLER                   PIC X(205).`,
+	TESTE: `01  TEST-RECORD.
+      * =========================================================
+      * IDENTIFICACAO BASICA
+      * =========================================================
+           05  rec-id                  PIC X(10).
+           05  rec-type                PIC X.
+
+      * =========================================================
+      * DISPLAY ALFANUMERICO
+      * =========================================================
+           05  alpha-simple            PIC X(5).
+           05  alpha-large             PIC X(50).
+
+      * =========================================================
+      * DISPLAY NUMERICO
+      * =========================================================
+           05  num-display-unsigned    PIC 9(5).
+           05  num-display-signed      PIC S9(6).
+           05  num-display-decimal     PIC 9(4)V99.
+           05  num-display-s-dec       PIC S9(3)V9.
+
+      * =========================================================
+      * BINARY / COMP (inteiros)
+      * =========================================================
+           05  bin-1-byte              PIC 9(2) COMP.
+           05  bin-2-bytes             PIC S9(4) COMP.
+           05  bin-4-bytes             PIC S9(9) COMP.
+
+      * =========================================================
+      * COMP-1 e COMP-2 (IEEE FLOAT)
+      * =========================================================
+           05  float-single            COMP-1.
+           05  float-double            COMP-2.
+
+      * =========================================================
+      * PACKED DECIMAL (COMP-3)
+      * =========================================================
+           05  packed-unsigned-small   PIC 9(3) COMP-3.
+           05  packed-signed-small     PIC S9(3) COMP-3.
+           05  packed-decimal          PIC 9(2)V99 COMP-3.
+           05  packed-signed-dec       PIC S9(4)V9 COMP-3.
+           05  packed-large            PIC S9(9) COMP-3.
+
+      * =========================================================
+      * OCCURS FIXO
+      * =========================================================
+           05  occurs-group.
+               10  occurs-item         PIC 9(2) OCCURS 5 TIMES.
+
+      * =========================================================
+      * OCCURS COM GRUPO E VARIOS TIPOS
+      * =========================================================
+           05  occurs-complex OCCURS 3 TIMES.
+               10  oc-id               PIC X(3).
+               10  oc-amount           PIC S9(5)V99 COMP-3.
+               10  oc-flag             PIC X.
+
+      * =========================================================
+      * REDEFINES
+      * =========================================================
+           05  redefine-area.
+               10  redefine-raw        PIC X(8).
+               10  redefine-bin REDEFINES redefine-raw.
+                   15 redefine-n1      PIC S9(4) COMP.
+                   15 redefine-n2      PIC S9(4) COMP.
+
+      * =========================================================
+      * GRUPOS ANINHADOS
+      * =========================================================
+           05  nested-group.
+               10  ng-header.
+                   15 ng-code          PIC X(2).
+                   15 ng-date          PIC 9(8).
+               10  ng-body.
+                   15 ng-value         PIC S9(6)V99 COMP-3.
+                   15 ng-status        PIC X.
+
+      * =========================================================
+      * FILLER (NAO EDITAVEL)
+      * =========================================================
+           05  FILLER                  PIC X(4).
+
+      * =========================================================
+      * LIMITES E CASOS MINIMOS
+      * =========================================================
+           05  one-byte-alpha          PIC X.
+           05  one-digit-num           PIC 9.
+           05  signed-one-digit        PIC S9.
+`
 };

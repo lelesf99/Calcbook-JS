@@ -1,4 +1,4 @@
-import type { ResolvedModel } from '$lib/domain/copybook/types';
+import type { ResolvedModel } from '$lib/types';
 import { derived, get, writable } from 'svelte/store';
 
 export interface ActiveField {
@@ -14,15 +14,15 @@ export const records = writable<Uint8Array[]>([]);
 export const currentRecordIndex = writable(0);
 
 export const buffer = derived([records, currentRecordIndex], ([$records, $idx]) => $records[$idx]);
-
+get(buffer)
 export const activeVariantDefault = writable<Record<string, string>>({});
 export const recordVariants = writable<Record<string, string>[]>([]);
 
 export const activeVariant = derived(
 	[activeVariantDefault, recordVariants, currentRecordIndex],
-	([$def, $rv, $idx]) => ({
-		...$def,
-		...($rv[$idx] ?? {})
+	([$default, $recv, $idx]) => ({
+		...$default,
+		...($recv[$idx] ?? {})
 	})
 );
 export function setModel(m: ResolvedModel) {
@@ -68,30 +68,3 @@ export function setActiveField(field: ActiveField | null) {
 export function clearActiveField() {
 	activeField.set(null);
 }
-
-model.subscribe((newModel) => {
-	if (!newModel) {
-		activeField.set(null);
-		return;
-	}
-
-	const af = get(activeField);
-	if (!af) return;
-
-	// tenta achar o mesmo campo pelo name
-	const newField = newModel.fieldsFlat.find((f) => f.name === af.name);
-
-	if (!newField) {
-		// campo não existe mais
-		activeField.set(null);
-		return;
-	}
-
-	// reaplica highlight semanticamente
-	activeField.set({
-		name: newField.name,
-		recordIndex: get(currentRecordIndex),
-		offset: newField.offset,
-		byteLength: newField.byteLength
-	});
-});

@@ -19,6 +19,8 @@
 	--border-radius-1: .25rem;
 	--border-radius-2: .5rem;
 	--border-radius-3: 1rem;
+
+	--border-radius-right-2: 0 .5rem .5rem 0;
 	--border-radius-circle: 50%;
 
 	--border-dashed: 2px dashed var(--color-bg-2);

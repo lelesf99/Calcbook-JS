@@ -1,8 +1,8 @@
 <script>
-	let { children, secondary = false, danger = false, ...others } = $props();
+	let { children, secondary = false, danger = false, muted = false, ...others } = $props();
 </script>
 
-<button class={[{ secondary }, { danger }]} {...others}>
+<button class={[{ secondary }, { danger }, { muted }]} {...others}>
 	{@render children()}
 </button>
 
@@ -14,7 +14,7 @@
 		color: var(--color-text);
 		border-radius: var(--border-radius-pill);
 		border: 2px solid var(--color-theme-1);
-		padding: .5rem .8rem;
+		padding: 0.5rem 0.8rem;
 		cursor: pointer;
 		transition:
 			background-color 300ms,
@@ -26,12 +26,12 @@
 	button:focus {
 		background-color: var(--color-theme-1);
 		outline: 1rem solid var(--color-theme-1);
-		outline-offset: -.5rem;
+		outline-offset: -0.5rem;
 		color: var(--color-bg-2);
 	}
 	button:active {
 		transition: none;
-		outline-offset: -.75rem;
+		outline-offset: -0.75rem;
 	}
 
 	/* SECONDARY */
@@ -52,5 +52,15 @@
 	button.danger:focus {
 		background: var(--color-error);
 		outline: 1rem solid var(--color-error);
+	}
+	/* MUTED */
+	button.muted {
+		border: 2px solid var(--color-bg-2);
+	}
+	button.muted:hover,
+	button.muted:focus {
+		background: var(--color-bg-2);
+		outline: 1rem solid var(--color-bg-2);
+		color: var(--color-text);
 	}
 </style>
