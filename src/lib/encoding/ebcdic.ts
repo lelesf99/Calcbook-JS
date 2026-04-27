@@ -55,12 +55,34 @@ ASCII_TO_EBCDIC[0x50] = 0xd7;
 ASCII_TO_EBCDIC[0x51] = 0xd8;
 ASCII_TO_EBCDIC[0x52] = 0xd9;
 
-const EBCDIC_TO_ASCII = new Uint8Array(256).fill(0x3f);
 
-for (let ascii = 0; ascii < 256; ascii++) {
-	const ebcdic = ASCII_TO_EBCDIC[ascii];
-	EBCDIC_TO_ASCII[ebcdic] = ascii;
+const EBCDIC_TO_ASCII = new Uint8Array(256).fill(0x3f); // '?'
+
+// Controles básicos (opcional)
+EBCDIC_TO_ASCII[0x00] = 0x00;
+EBCDIC_TO_ASCII[0x0A] = 0x0A;
+EBCDIC_TO_ASCII[0x0D] = 0x0D;
+
+// Espaço
+EBCDIC_TO_ASCII[0x40] = 0x20;
+
+// Dígitos
+for (let i = 0; i <= 9; i++) {
+    EBCDIC_TO_ASCII[0xF0 + i] = 0x30 + i;
 }
+
+// Letras maiúsculas
+const UC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+for (let i = 0; i < 9; i++) EBCDIC_TO_ASCII[0xC1 + i] = UC.charCodeAt(i);
+for (let i = 9; i < 18; i++) EBCDIC_TO_ASCII[0xD1 + (i - 9)] = UC.charCodeAt(i);
+for (let i = 18; i < 26; i++) EBCDIC_TO_ASCII[0xE2 + (i - 18)] = UC.charCodeAt(i);
+
+// Letras minúsculas
+const LC = "abcdefghijklmnopqrstuvwxyz";
+for (let i = 0; i < 9; i++) EBCDIC_TO_ASCII[0x81 + i] = LC.charCodeAt(i);
+for (let i = 9; i < 18; i++) EBCDIC_TO_ASCII[0x91 + (i - 9)] = LC.charCodeAt(i);
+for (let i = 18; i < 26; i++) EBCDIC_TO_ASCII[0xA2 + (i - 18)] = LC.charCodeAt(i);
+
 
 export function asciiToEbcdic(input: Uint8Array): Uint8Array {
 	const out = new Uint8Array(input.length);

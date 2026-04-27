@@ -18,7 +18,13 @@
 	const decoder = new TextDecoder('ascii');
 	let importMode = $state('line-by-line');
 	let exportChecked = $state(true);
-
+	function dumpHex(bytes: Uint8Array) {
+		console.log(
+			Array.from(bytes)
+				.map((b) => b.toString(16).padStart(2, '0'))
+				.join(' ')
+		);
+	}
 	async function importFile() {
 		if (!$model) {
 			alert('Carregue um copybook antes de importar.');
@@ -37,22 +43,21 @@
 			let records: Uint8Array[] = [];
 
 			// -------------------------------
-			// IMPORTAÇÃO BINÁRIA (EBCDIC)
-			// -------------------------------
-			if (file.name.endsWith('.dat')) {
-				const ebcdicBytes = new Uint8Array(await file.arrayBuffer());
-
-				// 🔑 CONVERSÃO AQUI
-				const asciiBytes = ebcdicToAscii(ebcdicBytes);
-
-				records = splitFixedRecords(asciiBytes, recordLength);
-			}
-			// -------------------------------
 			// IMPORTAÇÃO TEXTO (ASCII)
 			// -------------------------------
-			else {
+			console.log(await file.arrayBuffer());
+			if (file.name.endsWith('.txt')) {
 				const text = await file.text();
 				records = splitLineRecords(text, recordLength);
+			}
+			// -------------------------------
+			// IMPORTAÇÃO BINÁRIA (EBCDIC)
+			// -------------------------------
+			else {
+				const ebcdicBytes = new Uint8Array(await file.arrayBuffer());
+				dumpHex(ebcdicBytes);
+
+				records = splitFixedRecords(ebcdicBytes, recordLength);
 			}
 
 			if (!records.length) {
@@ -96,7 +101,7 @@
 		// 🔑 CONVERSÃO AQUI
 		const ebcdicOut = asciiToEbcdic(asciiOut);
 
-		downloadBlob((ebcdicOut.buffer as ArrayBuffer), 'records.dat', 'application/octet-stream');
+		downloadBlob(ebcdicOut.buffer as ArrayBuffer, 'records.dat', 'application/octet-stream');
 	}
 
 	function downloadBlob(data: string | ArrayBuffer, filename: string, type: string) {
@@ -115,7 +120,7 @@
 	function splitFixedRecords(bytes: Uint8Array, recordLength: number): Uint8Array[] {
 		const records: Uint8Array[] = [];
 
-		for (let i = 0; i < bytes.length; i += recordLength) {
+		for (let i = 0; i < bytes.length; i += recordLength + 16) {
 			const rec = new Uint8Array(recordLength);
 			rec.fill(0x20); // espaço
 			rec.set(bytes.slice(i, i + recordLength));

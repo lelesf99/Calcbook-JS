@@ -120,7 +120,6 @@
 		currentRecordIndex.set(idx);
 	}
 </script>
-
 <h3>Editor Arquivo</h3>
 <div class="controls">
 	<!-- Controles de arquivo -->

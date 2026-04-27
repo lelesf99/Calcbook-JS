@@ -5,15 +5,17 @@
 	import type { FieldResolved } from '$lib/types';
 	import { Plus, Minus } from '@lucide/svelte';
 	import Button from './Button.svelte';
+	import { onMount } from 'svelte';
 
 	let { field, tooltipText = '', ...others } = $props();
 	let inputRef;
 	let value = $state('');
 	let fValue = $derived(formatValue(value));
+	$inspect(value, fValue);
 	let isNegative = $state(false);
 
-	$effect(() => {
-		value = formatValue(unpackField($buffer, field));
+	onMount(() => {
+		value = unpackField($buffer, field);
 	});
 
 	function onInput(e) {
@@ -108,9 +110,9 @@
 	{/if}
 	<input
 		bind:this={inputRef}
+		bind:value={value}
 		{@attach tooltip(tooltipText, 'focus')}
 		placeholder={buildPlaceholder(field)}
-		bind:value={fValue}
 		oninput={onInput}
 		onfocus={() => activeField.set(field)}
 		onblur={() => activeField.set(null)}

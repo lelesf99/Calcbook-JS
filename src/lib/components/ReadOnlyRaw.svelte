@@ -54,6 +54,21 @@
 			CSS.highlights.set('raw-highlight', highlight);
 		}
 	}
+
+	function dumpHex(bytes: Uint8Array) {
+		console.log(
+			Array.from(bytes)
+				.map((b) => b.toString(16).padStart(2, '0'))
+				.join(' ')
+		);
+	}
+
+	function renderRaw(bytes: Uint8Array): string {
+		return Array.from(bytes)
+			.map((b) => (b >= 0x20 && b <= 0x7e ? String.fromCharCode(b) : '·'))
+			.join('');
+	}
+
 	$effect(() => {
 		if (!isInView[$currentRecordIndex]) scrollToCurrentRecord();
 		scrollToActiveField($activeField);
@@ -78,7 +93,7 @@
 					type="button"
 					onclick={() => selectRecord(i)}
 				>
-					<pre>{decoder.decode(record)}</pre>
+					<pre>{renderRaw(record)}</pre>
 				</button>
 			</div>
 		{/each}
