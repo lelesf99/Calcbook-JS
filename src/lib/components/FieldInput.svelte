@@ -14,8 +14,8 @@
 	$inspect(value, fValue);
 	let isNegative = $state(false);
 
-	onMount(() => {
-		value = unpackField($buffer, field);
+	$effect(() => {
+		if ($buffer) value = formatValue(unpackField($buffer, field));
 	});
 
 	function onInput(e) {
@@ -110,7 +110,7 @@
 	{/if}
 	<input
 		bind:this={inputRef}
-		bind:value={value}
+		bind:value
 		{@attach tooltip(tooltipText, 'focus')}
 		placeholder={buildPlaceholder(field)}
 		oninput={onInput}
