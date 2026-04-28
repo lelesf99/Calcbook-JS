@@ -45,7 +45,6 @@
 			// -------------------------------
 			// IMPORTAÇÃO TEXTO (ASCII)
 			// -------------------------------
-			console.log(await file.arrayBuffer());
 			if (file.name.endsWith('.txt')) {
 				const text = await file.text();
 				records = splitLineRecords(text, recordLength);

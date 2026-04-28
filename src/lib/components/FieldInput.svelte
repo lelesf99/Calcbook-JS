@@ -25,7 +25,6 @@
 		});
 	}
 	function parseValue(value: string) {
-		console.log(`parsing: ${value}`);
 		return (field.pic?.signed ? (isNegative ? '-' : '+') : '') + value.replace(/\D/g, '');
 	}
 	function formatValue(value: string) {
@@ -40,7 +39,6 @@
 			if (digits.length > intSize) {
 				const int = digits.slice(0, intSize);
 				const dec = digits.slice(-(digits.length - intSize));
-				console.log(-Math.max(0, digits.length - intSize));
 				digits = dec ? `${int}.${dec}` : int;
 			}
 			return digits;

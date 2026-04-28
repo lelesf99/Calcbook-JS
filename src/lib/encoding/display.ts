@@ -50,7 +50,6 @@ export function unpackDisplay(buffer: Uint8Array, field: FieldResolved): string 
 export function packDisplay(buffer: Uint8Array, field: FieldResolved, value: string): void {
 	const len = field.byteLength;
 	const raw = String(value);
-	console.log(`raw: ${raw}`);
 
 	// -------------------------------
 	// NUMERIC DISPLAY (ZONED DECIMAL)
@@ -60,7 +59,6 @@ export function packDisplay(buffer: Uint8Array, field: FieldResolved, value: str
 		const decimals = field.pic.decimals ?? 0;
 
 		const normalized = raw.replace(',', '.');
-		console.log(`normalized: ${normalized}`);
 
 		// Detecta sinal lógico
 		let negative = false;
@@ -70,10 +68,7 @@ export function packDisplay(buffer: Uint8Array, field: FieldResolved, value: str
 			negative = numeric[0] === '-';
 			numeric = numeric.slice(1);
 		}
-		console.log(`numeric: ${numeric}`);
 		const [iRaw = '', dRaw = ''] = numeric.split('.');
-
-		console.log(`iRaw: ${iRaw}`, `dRaw: ${dRaw}`);
 
 		const intPart = iRaw.replace(/\D/g, '');
 		const decPart = dRaw.replace(/\D/g, '');
