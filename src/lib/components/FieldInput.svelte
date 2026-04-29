@@ -3,9 +3,8 @@
 	import { packField, unpackField } from '$lib/encoding/resolveFieldType';
 	import { activeField, buffer, updateBuffer } from '$lib/stores/editor.store';
 	import type { FieldResolved } from '$lib/types';
-	import { Plus, Minus } from '@lucide/svelte';
+	import { Minus, Plus } from '@lucide/svelte';
 	import Button from './Button.svelte';
-	import { onMount } from 'svelte';
 
 	let { field, tooltipText = '', ...others } = $props();
 	let inputRef;
@@ -13,12 +12,15 @@
 	let fValue = $derived(formatValue(value));
 	$inspect(value, fValue);
 	let isNegative = $state(false);
+	let semaforo = true;
 
 	$effect(() => {
-		value = formatValue(unpackField($buffer, field));
+		if (semaforo) value = formatValue(unpackField($buffer, field));
+		semaforo = true;
 	});
 
 	function onInput(e) {
+		semaforo = false;
 		updateBuffer((buf) => {
 			packField(buf, field, parseValue(value));
 		});
