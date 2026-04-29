@@ -15,7 +15,7 @@
 	let isNegative = $state(false);
 
 	$effect(() => {
-		if ($buffer) value = formatValue(unpackField($buffer, field));
+		if ($buffer && field.pic?.type === 'NUMERIC') value = formatValue(unpackField($buffer, field));
 	});
 
 	function onInput(e) {
