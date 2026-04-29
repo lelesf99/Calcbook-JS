@@ -15,19 +15,20 @@
 	let isNegative = $state(false);
 
 	$effect(() => {
-		if ($buffer && field.pic?.type === 'NUMERIC') value = formatValue(unpackField($buffer, field));
+		value = formatValue(unpackField($buffer, field));
 	});
 
 	function onInput(e) {
-		if (field.pic?.type === 'NUMERIC') value = (e.target as HTMLInputElement).value;
 		updateBuffer((buf) => {
 			packField(buf, field, parseValue(value));
 		});
 	}
 	function parseValue(value: string) {
+		if (field.pic?.type !== 'NUMERIC') return value;
 		return (field.pic?.signed ? (isNegative ? '-' : '+') : '') + value.replace(/\D/g, '');
 	}
 	function formatValue(value: string) {
+		if (field.pic?.type !== 'NUMERIC') return value;
 		const pic = field.pic;
 		if (!pic) return value;
 		if (!value) return value;
