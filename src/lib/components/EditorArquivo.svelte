@@ -196,8 +196,8 @@
 	}
 	#recInput {
 		font-size: medium;
-		padding: 0.8rem 0rem 0.8rem 1rem;
-		margin-inline: 0.5rem;
+		padding: .5rem .6rem;
+		margin-inline: 0.7rem;
 		font-family: var(--font-body);
 		color: var(--color-text);
 		background-color: transparent;
@@ -213,7 +213,7 @@
 	}
 	#recInput:focus {
 		background-color: var(--color-theme-1);
-		outline: 1rem solid var(--color-theme-1);
+		outline: 1.2rem solid var(--color-theme-1);
 		outline-offset: -0.5rem;
 		color: var(--color-bg-2);
 	}

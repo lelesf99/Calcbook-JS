@@ -1,52 +1,34 @@
 <script lang="ts">
 	import { tooltip } from '$lib/attachments/tooltip';
 	import { packField, unpackField } from '$lib/encoding/resolveFieldType';
-	import { activeField, buffer, updateBuffer } from '$lib/stores/editor.store';
+	import { activeField, buffer, currentRecordIndex, updateBuffer } from '$lib/stores/editor.store';
 	import type { FieldResolved } from '$lib/types';
 	import { Minus, Plus } from '@lucide/svelte';
 	import Button from './Button.svelte';
+	import { maska } from 'maska/svelte';
+	import { preventDefault } from 'svelte/legacy';
 
 	let { field, tooltipText = '', ...others } = $props();
 	let inputRef;
 	let value = $state('');
-	let fValue = $derived(formatValue(value));
-	$inspect(value, fValue);
 	let isNegative = $state(false);
+	let active = $derived($activeField ? inputRef === $activeField.ref : false);
 	let semaforo = true;
 
 	$effect(() => {
-		if (semaforo) value = formatValue(unpackField($buffer, field));
+		$currentRecordIndex;
+		if (semaforo) value = unpackField($buffer, field);
 		semaforo = true;
 	});
 
-	function onInput(e) {
+	function onInput(e: Event) {
 		semaforo = false;
 		updateBuffer((buf) => {
-			packField(buf, field, parseValue(value));
+			packField(buf, field, value);
 		});
 	}
-	function parseValue(value: string) {
-		if (field.pic?.type !== 'NUMERIC') return value;
-		return (field.pic?.signed ? (isNegative ? '-' : '+') : '') + value.replace(/\D/g, '');
-	}
-	function formatValue(value: string) {
-		if (field.pic?.type !== 'NUMERIC') return value;
-		const pic = field.pic;
-		if (!pic) return value;
-		if (!value) return value;
-
-		if (pic.type === 'NUMERIC') {
-			const intSize = field.byteLength - pic.decimals;
-
-			let digits = value.replace(/\D/g, '');
-			if (digits.length > intSize) {
-				const int = digits.slice(0, intSize);
-				const dec = digits.slice(-(digits.length - intSize));
-				digits = dec ? `${int}.${dec}` : int;
-			}
-			return digits;
-		}
-		return value;
+	function buildMask(field) {
+		return buildPlaceholder(field).replace(/9/g, '#').replace(/X/g, '*');
 	}
 	function buildPlaceholder(field: FieldResolved): string {
 		if (!field.pic) return '';
@@ -86,13 +68,18 @@
 </script>
 
 <div
+	style:flex-basis={`calc(${field.byteLength}ch + 1rem ${field.pic?.signed ? '+ 2.6rem' : ''} ${field.pic?.decimals ? '+ 1CH' : ''})`}
+	class:active
 	class="field"
-	style:flex-basis={`calc(${field.byteLength + (field.pic?.signed ? 1 : 0)}ch + 2.4rem ${field.pic?.signed ? '+ 2.6rem' : ''} ${field.pic?.decimals ? '+ 1.5rem' : ''})`}
 >
 	{#if field.pic?.signed}
 		<Button
+			onmousedown={(e) => {
+				e.preventDefault();
+			}}
 			onclick={() => {
 				isNegative = !isNegative;
+				inputRef.focus();
 				inputRef.dispatchEvent(
 					new Event('input', {
 						bubbles: true,
@@ -112,11 +99,17 @@
 	<input
 		bind:this={inputRef}
 		bind:value
+		use:maska
+		data-maska={buildMask(field)}
 		{@attach tooltip(tooltipText, 'focus')}
 		placeholder={buildPlaceholder(field)}
 		oninput={onInput}
-		onfocus={() => activeField.set(field)}
-		onblur={() => activeField.set(null)}
+		onfocus={() => {
+			activeField.set({ ...field, ref: inputRef });
+		}}
+		onblur={() => {
+			activeField.set(null);
+		}}
 		inputmode={field.pic?.type === 'NUMERIC' ? 'decimal' : 'text'}
 		maxlength={field.byteLength + (field.pic?.decimals ? 1 : 0)}
 		autocapitalize="off"
@@ -132,10 +125,17 @@
 		position: relative;
 		display: flex;
 		align-items: center;
-		padding: 0.5rem;
-		border-bottom: 1px dashed #222;
+		margin: 0.5rem;
 		color: var(--color-text);
 		font-family: var(--font-mono);
+		background: #0b0c0d;
+		outline: 2px solid #333;
+		border-radius: var(--border-radius-2);
+		transition:
+			background 300ms,
+			color 300ms,
+			outline 50ms,
+			outline-offset 150ms linear;
 	}
 
 	.field:last-child {
@@ -144,25 +144,21 @@
 
 	.field input {
 		width: 100%;
+		background: transparent;
+		border: none;
 		font: 1rem var(--font-mono);
-		color: var(--color-text);
-		background: #0b0c0d;
-		border: 2px solid #333;
-		border-radius: var(--border-radius-2);
-		padding: 0.8rem 0.5rem;
-
-		transition:
-			background 300ms,
-			color 300ms,
-			outline 50ms,
-			outline-offset 150ms linear;
+		color: inherit;
+		padding: 0.5rem;
+	}
+	.field input:focus {
+		outline: none;
 	}
 
-	.field input:focus {
+	.field.active {
 		border-radius: var(--border-radius-pill);
 		background: var(--color-theme-1);
 		outline: 0.8rem solid var(--color-theme-1);
-		outline-offset: -0.5rem;
+		outline-offset: -0.4rem;
 		color: var(--color-bg);
 		width: 100%;
 	}

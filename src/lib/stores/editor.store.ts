@@ -6,6 +6,7 @@ export interface ActiveField {
 	recordIndex: number;
 	offset: number;
 	byteLength: number;
+	ref?: HTMLElement;
 }
 export const activeField = writable<ActiveField | null>(null);
 

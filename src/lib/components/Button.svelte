@@ -1,8 +1,15 @@
 <script>
-	let { children, secondary = false, danger = false, muted = false, ...others } = $props();
+	let {
+		children,
+		secondary = false,
+		danger = false,
+		muted = false,
+		mini = false,
+		...others
+	} = $props();
 </script>
 
-<button class={[{ secondary }, { danger }, { muted }]} {...others}>
+<button class={[{ secondary }, { danger }, { muted }, { mini }]} {...others}>
 	{@render children()}
 </button>
 
@@ -13,14 +20,16 @@
 		background-color: transparent;
 		color: var(--color-text);
 		border-radius: var(--border-radius-pill);
-		border: 2px solid var(--color-theme-1);
+		outline: 2px solid var(--color-theme-1);
+		outline-offset: -0.1px;
+		border: none;
 		padding: 0.5rem 0.8rem;
 		cursor: pointer;
 		transition:
-			background-color 300ms,
-			color 300ms,
-			outline 50ms,
-			outline-offset 150ms linear;
+		background-color 300ms,
+		color 300ms,
+		outline 50ms,
+		outline-offset 150ms linear;
 	}
 	button:hover,
 	button:focus {
@@ -33,20 +42,20 @@
 		transition: none;
 		outline-offset: -0.75rem;
 	}
-
+	
 	/* SECONDARY */
 	button.secondary {
-		border: 2px solid var(--color-theme-2);
+		outline: 2px solid var(--color-theme-2);
 	}
 	button.secondary:hover,
 	button.secondary:focus {
 		background: var(--color-theme-2);
 		outline: 1rem solid var(--color-theme-2);
 	}
-
+	
 	/* DANGER */
 	button.danger {
-		border: 2px solid var(--color-error);
+		outline: 2px solid var(--color-error);
 	}
 	button.danger:hover,
 	button.danger:focus {
@@ -55,7 +64,8 @@
 	}
 	/* MUTED */
 	button.muted {
-		border: 2px solid var(--color-bg-2);
+		outline: 2px solid var(--color-bg);
+		background: var(--color-bg);
 	}
 	button.muted:hover,
 	button.muted:focus {
@@ -63,4 +73,14 @@
 		outline: 1rem solid var(--color-bg-2);
 		color: var(--color-text);
 	}
-</style>
+	button.mini{
+		padding: 0.3rem 0.6rem;
+	}
+	button.mini:hover,
+	button.mini:focus {
+		background: var(--color-bg-2);
+		color: var(--color-text);
+		outline: .4rem solid var(--color-bg-2);
+		outline-offset: -0.2rem;
+	}
+	</style>
