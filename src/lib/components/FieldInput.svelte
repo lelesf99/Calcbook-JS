@@ -4,9 +4,8 @@
 	import { activeField, buffer, currentRecordIndex, updateBuffer } from '$lib/stores/editor.store';
 	import type { FieldResolved } from '$lib/types';
 	import { Minus, Plus } from '@lucide/svelte';
-	import Button from './Button.svelte';
 	import { maska } from 'maska/svelte';
-	import { preventDefault } from 'svelte/legacy';
+	import Button from './Button.svelte';
 
 	let { field, tooltipText = '', ...others } = $props();
 	let inputRef;
@@ -23,8 +22,9 @@
 
 	function onInput(e: Event) {
 		semaforo = false;
+		const fValue = field.pic?.signed ? (isNegative ? '-' : '+') + value : value;
 		updateBuffer((buf) => {
-			packField(buf, field, value);
+			packField(buf, field, fValue);
 		});
 	}
 	function buildMask(field) {
