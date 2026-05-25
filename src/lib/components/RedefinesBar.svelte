@@ -39,13 +39,13 @@
 			<PillNav>
 				{#if hasVisibleFieldForBase(base)}
 					<Button onclick={() => prev(base, members)}
-						><ChevronsLeft size={16} strokeWidth={3} /></Button
+						><ChevronsLeft  /></Button
 					>
 					<span class="redef-value">
 						{$activeVariant[base] ?? base}
 					</span>
 					<Button onclick={() => next(base, members)}
-						><ChevronsRight size={16} strokeWidth={3} /></Button
+						><ChevronsRight  /></Button
 					>
 				{/if}
 			</PillNav>

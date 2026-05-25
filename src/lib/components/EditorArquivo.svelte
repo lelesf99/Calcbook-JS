@@ -10,16 +10,26 @@
 	} from '$lib/stores/editor.store';
 	import type { FieldResolved } from '$lib/types';
 	import { visibleFields } from '$lib/utils/visibility';
-	import { ArrowDownToLine, ArrowUpToLine, Copy, Plus, Trash } from '@lucide/svelte';
+	import {
+		ArrowDownToLine,
+		ArrowUpToLine,
+		Copy,
+		Plus,
+		Trash,
+		List,
+		LayoutTemplate
+	} from '@lucide/svelte';
 	import Button from './Button.svelte';
 	import FieldInput from './FieldInput.svelte';
 	import PillNav from './PillNav.svelte';
 	import ReadOnlyRaw from './ReadOnlyRaw.svelte';
 	import RedefinesBar from './RedefinesBar.svelte';
+	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 
 	let fields = $state<FieldResolved[]>([]);
 	let recInputValue = $state(1);
-	let layoutToggle = $state('flex');
+	let layoutToggle = $state('list');
 
 	$effect(() => {
 		fields = $model ? visibleFields($model, $activeVariant) : [];
@@ -27,6 +37,17 @@
 		return () => {};
 	});
 
+	onMount(() => {
+		if (browser) {
+			const item = localStorage.getItem('calcbookLayoutToggle');
+			if (item) layoutToggle = item;
+		}
+	});
+
+	function setLayoutToggle(value) {
+		layoutToggle = value;
+		localStorage.setItem('calcbookLayoutToggle', value);
+	}
 	function createEmptyRecord() {
 		if (!$model) return null;
 
@@ -120,9 +141,20 @@
 		currentRecordIndex.set(idx);
 	}
 </script>
+
 <h3>Editor Arquivo</h3>
 <div class="controls">
 	<!-- Controles de arquivo -->
+
+	<div class="layout-toggle">
+		<button disabled={layoutToggle === 'list'} onclick={() => setLayoutToggle('list')}
+			><List /></button
+		>
+		<button disabled={layoutToggle === 'flex'} onclick={() => setLayoutToggle('flex')}
+			><LayoutTemplate /></button
+		>
+	</div>
+
 	<PillNav gap=".1rem">
 		<label for="recInput">Registro</label>
 		<input
@@ -140,27 +172,27 @@
 	</PillNav>
 	<PillNav>
 		<Button onclick={prevRecord} {@attach tooltip('Ir para linha anterior')}>
-			<ArrowUpToLine size={16} strokeWidth={3} />
+			<ArrowUpToLine />
 		</Button>
 		<Button onclick={() => addRecord($currentRecordIndex)} {@attach tooltip('Adicionar linha')}>
-			<Plus size={16} strokeWidth={3} />
+			<Plus />
 		</Button>
 		<Button onclick={nextRecord} {@attach tooltip('Ir para a próxima linha')}>
-			<ArrowDownToLine size={16} strokeWidth={3} />
+			<ArrowDownToLine />
 		</Button>
 		<Button
 			onclick={() => duplicateRecord($currentRecordIndex)}
 			secondary
 			{@attach tooltip('Duplicar linha atual')}
 		>
-			<Copy size={16} strokeWidth={3} />
+			<Copy />
 		</Button>
 		<Button
 			onclick={() => deleteRecord($currentRecordIndex)}
 			danger
 			{@attach tooltip('Deletar linha atual')}
 		>
-			<Trash size={16} strokeWidth={3} />
+			<Trash />
 		</Button>
 	</PillNav>
 	<RedefinesBar />
@@ -171,8 +203,12 @@
 	{:else}
 		{#each fields as field (field.name + ':' + field.offset)}
 			{#if layoutToggle === 'list'}
-				<label for={field.name}></label>
-				<FieldInput {field} name={field.name} />
+				<FieldInput
+					{field}
+					id={field.name}
+					name={field.name}
+					label={`${field.name} : ${field.pic?.raw} : [${field.offset}..${field.offset + field.byteLength - 1}]`}
+				/>
 			{:else}
 				<FieldInput
 					name={field.name}
@@ -196,7 +232,7 @@
 	}
 	#recInput {
 		font-size: medium;
-		padding: .5rem .6rem;
+		padding: 0.5rem 0.6rem;
 		margin-inline: 0.7rem;
 		font-family: var(--font-body);
 		color: var(--color-text);
@@ -234,6 +270,35 @@
 		margin-left: 1rem;
 	}
 
+	.layout-toggle {
+		outline: 2px solid var(--color-bg-2);
+		border-radius: var(--border-radius-pill);
+		overflow: hidden;
+		display: flex;
+	}
+
+	.layout-toggle button {
+		border: none;
+		background-color: transparent;
+		color: var(--color-text);
+		height: 100%;
+		padding: 0.5rem 1rem;
+		cursor: pointer;
+		transition: background-color 50ms;
+	}
+
+	.layout-toggle button:hover {
+		background-color: var(--color-bg-2);
+	}
+
+	.layout-toggle button:not(:last-child) {
+		border-right: 2px solid var(--color-bg-2);
+	}
+	.layout-toggle button[disabled] {
+		pointer-events: none;
+		background-color: var(--color-bg-2);
+	}
+
 	.controls {
 		display: flex;
 		flex-wrap: wrap;
@@ -253,5 +318,6 @@
 		min-height: 0;
 	}
 	.form.list {
+		display: block;
 	}
 </style>

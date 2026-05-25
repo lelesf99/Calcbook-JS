@@ -7,7 +7,7 @@
 	import { maska } from 'maska/svelte';
 	import Button from './Button.svelte';
 
-	let { field, tooltipText = '', ...others } = $props();
+	let { field, tooltipText = '', label = '', id = '', ...others } = $props();
 	let inputRef;
 	let value = $state('');
 	let isNegative = $state(false);
@@ -72,6 +72,9 @@
 	class:active
 	class="field"
 >
+	{#if label && id}
+		<label for={id}>{label}</label>
+	{/if}
 	{#if field.pic?.signed}
 		<Button
 			onmousedown={(e) => {
@@ -90,9 +93,9 @@
 			muted
 		>
 			{#if !isNegative}
-				<Plus size={16} strokeWidth={3} />
+				<Plus />
 			{:else}
-				<Minus size={16} strokeWidth={3} />
+				<Minus />
 			{/if}
 		</Button>
 	{/if}
@@ -100,14 +103,16 @@
 		bind:this={inputRef}
 		bind:value
 		use:maska
+		{id}
 		data-maska={buildMask(field)}
-		{@attach tooltip(tooltipText, 'focus')}
+		{@attach tooltipText && tooltip(tooltipText, 'focus')}
 		placeholder={buildPlaceholder(field)}
 		oninput={onInput}
 		onfocus={() => {
 			activeField.set({ ...field, ref: inputRef });
 		}}
 		onblur={() => {
+			semaforo = true;
 			activeField.set(null);
 		}}
 		inputmode={field.pic?.type === 'NUMERIC' ? 'decimal' : 'text'}
@@ -121,6 +126,16 @@
 </div>
 
 <style>
+	label {
+		position: absolute;
+		left: 0rem;
+		top: -2rem;
+		white-space: nowrap;
+		color: var(--color-text);
+	}
+	.field:has(label) {
+		margin-top: 2.5rem;
+	}
 	.field {
 		position: relative;
 		display: flex;
@@ -137,7 +152,6 @@
 			outline 50ms,
 			outline-offset 150ms linear;
 	}
-
 	.field:last-child {
 		border-bottom: none;
 	}

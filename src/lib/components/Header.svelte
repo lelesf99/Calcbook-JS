@@ -151,7 +151,7 @@
 	<PillNav>
 		<RadioGroup bind:selected={importMode} options={importOptions} />
 		<Button onclick={importFile} {@attach tooltip('Importar arquivo a ser editado')}>
-			<FileUp size={16} strokeWidth={3} />
+			<FileUp  />
 			Importar
 		</Button>
 	</PillNav>
@@ -162,7 +162,7 @@
 			onclick={exportFile}
 			{@attach tooltip(`Salvar arquivo editado como ${exportChecked ? 'TXT' : '.dat'}`)}
 		>
-			<Download size={16} strokeWidth={3} />
+			<Download  />
 			Download
 		</Button>
 	</PillNav>

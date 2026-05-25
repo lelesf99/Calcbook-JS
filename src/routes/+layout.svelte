@@ -1,8 +1,13 @@
 <script>
 	import Header from '$lib/components/Header.svelte';
 	import './layout.css';
+	import { setLucideProps } from '@lucide/svelte';
 
 	let { children } = $props();
+	setLucideProps({
+		size: 16,
+		strokeWidth: 3
+	});
 </script>
 
 <div class="app">
@@ -24,8 +29,7 @@
 		flex-grow: 0;
 		height: 100vh;
 		display: grid;
-		grid-template-areas: 
-			'copybook' 'arquivo';
+		grid-template-areas: 'copybook' 'arquivo';
 		grid-template-rows: 1fr;
 		grid-template-columns: 1fr 2fr;
 		gap: 1rem;
